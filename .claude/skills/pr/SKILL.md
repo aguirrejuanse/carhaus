@@ -20,7 +20,7 @@ Push the current branch and open a PR against `main` using `gh`, following the c
 
 ```markdown
 ## Task
-<what was asked — link the issue/ticket/change if there is one; otherwise one line naming the SDD phase/change (e.g. "Carhaus MVP — PR2: pricing libs")>
+<what was asked — reference the relevant TASKS.md phase/items (e.g. "Carhaus MVP — Phase 3 (3.1-3.3), see TASKS.md")>
 
 ## Overview
 <what changed and why, technical — 2-5 bullets. Include notable deviations from spec/design and flagged risks here too>
@@ -43,3 +43,4 @@ Always end the PR body with the session attribution line from the system reminde
 - Delivery strategy: chained PRs, `stacked-to-main` — every PR's base is `main`, none target another PR's branch.
 - If `sdd-verify` ran for the change behind this PR, summarize its verdict (PASS/WARNINGS/CRITICAL count) in the PR body's Overview section.
 - Don't include unrelated untracked files (e.g. `.atl/`, `logo.jpg`) unless the PR is specifically about them.
+- After the PR is created (or its body updated), tick off the corresponding items in `TASKS.md` on the branch and include that change in the same push — this is the project's task tracker, there is no GitHub Issues/Projects board.
