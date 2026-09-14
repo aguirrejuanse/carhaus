@@ -9,7 +9,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | Unit | Goal | PR | Depends on | Status |
 |---|---|---|---|---|
 | 1 | Scaffold + schema + seed (Ph.1-2) | PR1 | — | ✅ merged |
-| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | next |
+| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | in review |
 | 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | pending |
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | pending |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | pending |
@@ -32,9 +32,9 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 2.4 `db/seed.ts` — admin, pricing_rules row, cars, drivers
 
 ## Phase 3: Pricing/Distance/Quote Libs
-- [ ] 3.1 `lib/distance.ts` DistanceProvider + Google impl, `AbortSignal.timeout(5000)`; test stubbed fetch + timeout (spec: Distance Provider Failure Handling)
-- [ ] 3.2 `lib/pricing.ts` priceLeg/priceTrip, night multiplier via Intl, min fare; test night boundary, min fare, 2-leg sum (spec: Price Preview, 2-leg pricing)
-- [ ] 3.3 `lib/quote.ts` HMAC sign/verify quote token; test sign/verify/expiry
+- [x] 3.1 `lib/distance.ts` DistanceProvider + Google impl, `AbortSignal.timeout(5000)`; test stubbed fetch + timeout (spec: Distance Provider Failure Handling)
+- [x] 3.2 `lib/pricing.ts` priceLeg/priceTrip, night multiplier via Intl, min fare; test night boundary, min fare, 2-leg sum (spec: Price Preview, 2-leg pricing)
+- [x] 3.3 `lib/quote.ts` HMAC sign/verify quote token; test sign/verify/expiry
 
 ## Phase 4: API Guards + Auth
 - [ ] 4.1 `lib/api/guards.ts` assertSameOrigin; test missing/foreign/matching Origin
