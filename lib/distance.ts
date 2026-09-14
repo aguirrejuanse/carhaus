@@ -103,7 +103,12 @@ export class GoogleDistanceProvider implements DistanceProvider {
       );
     }
 
-    if (!element.distance || !element.duration) {
+    if (
+      !element.distance ||
+      !element.duration ||
+      !Number.isFinite(element.distance.value) ||
+      !Number.isFinite(element.duration.value)
+    ) {
       throw new DistanceProviderError(
         "Distance provider response is missing distance/duration",
       );
@@ -114,8 +119,4 @@ export class GoogleDistanceProvider implements DistanceProvider {
       durationSeconds: element.duration.value,
     };
   }
-}
-
-export function createDistanceProvider(apiKey: string): DistanceProvider {
-  return new GoogleDistanceProvider(apiKey);
 }

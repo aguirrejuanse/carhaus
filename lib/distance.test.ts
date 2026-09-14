@@ -121,4 +121,33 @@ describe("GoogleDistanceProvider", () => {
       DistanceProviderError,
     );
   });
+
+  it("throws DistanceProviderError when distance/duration are present but non-numeric", async () => {
+    // Regression: an element can be `status: "OK"` with a truthy `distance`/
+    // `duration` object whose `.value` is missing/non-finite. Without an
+    // explicit finite-number check this silently produces NaN, which then
+    // flows into a signed quote token as `null` (see lib/quote.ts).
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      jsonResponse({
+        status: "OK",
+        rows: [
+          {
+            elements: [
+              {
+                status: "OK",
+                distance: {},
+                duration: { value: 900 },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const provider = new GoogleDistanceProvider("test-key");
+
+    await expect(provider.getDistance("A", "B")).rejects.toThrow(
+      DistanceProviderError,
+    );
+  });
 });

@@ -8,27 +8,31 @@
  */
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 /** Quote validity window, per design decision #5 ("exp: +15min"). */
 export const QUOTE_TTL_MS = 15 * 60 * 1000;
 
-export interface QuoteLeg {
-  sequence: 1 | 2;
-  origin: string;
-  destination: string;
+const quoteLegSchema = z.object({
+  sequence: z.union([z.literal(1), z.literal(2)]),
+  origin: z.string(),
+  destination: z.string(),
   /** ISO 8601 timestamp. */
-  scheduledAt: string;
-  distanceMeters: number;
-  durationSeconds: number;
-  priceCents: number;
-}
+  scheduledAt: z.string(),
+  distanceMeters: z.number().finite().nonnegative(),
+  durationSeconds: z.number().finite().nonnegative(),
+  priceCents: z.number().finite().nonnegative(),
+});
 
-export interface QuotePayload {
-  legs: QuoteLeg[];
-  totalPriceCents: number;
+const quotePayloadSchema = z.object({
+  legs: z.array(quoteLegSchema),
+  totalPriceCents: z.number().finite().nonnegative(),
   /** Unix epoch milliseconds. */
-  exp: number;
-}
+  exp: z.number(),
+});
+
+export type QuoteLeg = z.infer<typeof quoteLegSchema>;
+export type QuotePayload = z.infer<typeof quotePayloadSchema>;
 
 export class QuoteVerificationError extends Error {
   constructor(message: string) {
@@ -85,16 +89,20 @@ export function verifyQuote(token: string, secret: string): QuotePayload {
     throw new QuoteVerificationError("Invalid quote signature");
   }
 
-  let payload: QuotePayload;
+  let parsedJson: unknown;
   try {
-    payload = JSON.parse(
-      base64UrlDecode(encodedPayload).toString("utf8"),
-    ) as QuotePayload;
+    parsedJson = JSON.parse(base64UrlDecode(encodedPayload).toString("utf8"));
   } catch {
     throw new QuoteVerificationError("Malformed quote payload");
   }
 
-  if (typeof payload.exp !== "number" || Date.now() > payload.exp) {
+  const result = quotePayloadSchema.safeParse(parsedJson);
+  if (!result.success) {
+    throw new QuoteVerificationError("Malformed quote payload");
+  }
+  const payload = result.data;
+
+  if (Date.now() > payload.exp) {
     throw new QuoteVerificationError("Quote has expired");
   }
 

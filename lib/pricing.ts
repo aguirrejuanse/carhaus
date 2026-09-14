@@ -40,19 +40,38 @@ export interface LegPriceResult {
   isNightRate: boolean;
 }
 
+/** Formatters are timezone-data-resolution-heavy to construct; reuse per timezone. */
+const hourFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getHourFormatter(timezone: string): Intl.DateTimeFormat {
+  let formatter = hourFormatterCache.get(timezone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      hour12: false,
+    });
+    hourFormatterCache.set(timezone, formatter);
+  }
+  return formatter;
+}
+
 /**
  * Resolves the local hour-of-day (0-23) for `date` in `timezone` via
  * `Intl.DateTimeFormat`, avoiding manual UTC-offset arithmetic (which breaks
  * around DST transitions).
  */
 function resolveLocalHour(date: Date, timezone: string): number {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "numeric",
-    hour12: false,
-  });
-  const hourPart = formatter.formatToParts(date).find((p) => p.type === "hour");
-  const hour = hourPart ? Number.parseInt(hourPart.value, 10) : date.getUTCHours();
+  const hourPart = getHourFormatter(timezone)
+    .formatToParts(date)
+    .find((p) => p.type === "hour");
+  if (!hourPart) {
+    // Every en-US "hour: numeric" formatter emits an "hour" part; if this
+    // ever fires, silently falling back to UTC would compute the wrong
+    // night-rate window (and wrong price) instead of failing loudly.
+    throw new Error(`Could not resolve local hour for timezone "${timezone}"`);
+  }
+  const hour = Number.parseInt(hourPart.value, 10);
   // Intl can format midnight as "24" for hour12:false in some locales/engines.
   return hour === 24 ? 0 : hour;
 }

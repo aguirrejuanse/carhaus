@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   type QuotePayload,
@@ -67,6 +68,27 @@ describe("signQuote / verifyQuote", () => {
 
   it("rejects a malformed token (missing signature segment)", () => {
     expect(() => verifyQuote("not-a-valid-token", SECRET)).toThrow(
+      QuoteVerificationError,
+    );
+  });
+
+  it("rejects a signed payload that fails schema validation (e.g. non-finite price)", () => {
+    // Signed directly (bypassing signQuote's type check) to simulate a
+    // tampered-but-correctly-signed payload, e.g. NaN produced upstream by a
+    // distance-provider bug (see lib/distance.ts) before it was caught there.
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        legs: [],
+        totalPriceCents: Number.NaN,
+        exp: createQuoteExpiry(),
+      }),
+      "utf8",
+    ).toString("base64url");
+    const signature = createHmac("sha256", SECRET)
+      .update(encodedPayload)
+      .digest("base64url");
+
+    expect(() => verifyQuote(`${encodedPayload}.${signature}`, SECRET)).toThrow(
       QuoteVerificationError,
     );
   });

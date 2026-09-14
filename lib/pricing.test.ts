@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type PricingRules, priceLeg, priceTrip } from "./pricing";
+import { APP_TIMEZONE, type PricingRules, priceLeg, priceTrip } from "./pricing";
 
 const baseRules: PricingRules = {
   baseFareCents: 1000,
@@ -67,6 +67,39 @@ describe("priceLeg", () => {
     const result = priceLeg(
       { ...midDistanceInput, scheduledAt: new Date("2026-01-10T06:00:00Z") },
       baseRules,
+      "UTC",
+    );
+
+    expect(result.isNightRate).toBe(false);
+    expect(result.priceCents).toBe(2400);
+  });
+
+  it("resolves the night window against the real APP_TIMEZONE (America/Argentina/Buenos_Aires, UTC-3)", () => {
+    // 03:00 UTC = 00:00 Buenos Aires (within the 22-6 night window).
+    const nightResult = priceLeg(
+      { ...midDistanceInput, scheduledAt: new Date("2026-01-10T03:00:00Z") },
+      baseRules,
+      APP_TIMEZONE,
+    );
+    expect(nightResult.isNightRate).toBe(true);
+    expect(nightResult.priceCents).toBe(3600);
+
+    // 12:00 UTC = 09:00 Buenos Aires (outside the night window).
+    const dayResult = priceLeg(
+      { ...midDistanceInput, scheduledAt: new Date("2026-01-10T12:00:00Z") },
+      baseRules,
+      APP_TIMEZONE,
+    );
+    expect(dayResult.isNightRate).toBe(false);
+    expect(dayResult.priceCents).toBe(2400);
+  });
+
+  it("never applies the night rate when nightStartHour equals nightEndHour", () => {
+    const rules: PricingRules = { ...baseRules, nightStartHour: 5, nightEndHour: 5 };
+
+    const result = priceLeg(
+      { ...midDistanceInput, scheduledAt: new Date("2026-01-10T05:00:00Z") },
+      rules,
       "UTC",
     );
 
