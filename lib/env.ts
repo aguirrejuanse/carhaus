@@ -5,6 +5,7 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   JWT_SECRET: z.string().min(32),
   QUOTE_SECRET: z.string().min(32),
+  GOOGLE_MAPS_API_KEY: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -25,6 +26,7 @@ export function getEnv(): Env {
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
     QUOTE_SECRET: process.env.QUOTE_SECRET,
+    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
   });
 
   if (!parsed.success) {

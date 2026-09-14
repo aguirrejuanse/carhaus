@@ -5,6 +5,7 @@ const REQUIRED_KEYS = [
   "DATABASE_URL",
   "JWT_SECRET",
   "QUOTE_SECRET",
+  "GOOGLE_MAPS_API_KEY",
 ] as const;
 
 const originalEnv: Record<string, string | undefined> = {};
@@ -18,6 +19,7 @@ describe("getEnv", () => {
     process.env.DATABASE_URL = "postgres://user:pass@localhost:5432/carhaus";
     process.env.JWT_SECRET = "a".repeat(32);
     process.env.QUOTE_SECRET = "b".repeat(32);
+    process.env.GOOGLE_MAPS_API_KEY = "test-google-maps-api-key";
     vi.resetModules();
   });
 
