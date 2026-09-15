@@ -25,15 +25,29 @@ async function main() {
     })
     .onConflictDoNothing({ target: admins.email });
 
-  await db.insert(pricingRules).values({
-    baseFareCents: 50000,
-    perKmCents: 15000,
-    perMinuteCents: 3000,
-    minimumFareCents: 80000,
-    nightMultiplierBasisPoints: 15000, // 1.5x
-    nightStartHour: 22,
-    nightEndHour: 6,
-  });
+  // pricing_rules has no natural unique key to conflict on (rates are
+  // expected to change over time, so re-running this on a live DB should
+  // never silently insert a duplicate "current" row) — only seed the initial
+  // row when the table is empty. Later rate changes go through a dedicated
+  // admin flow, not this script.
+  const existingRules = await db
+    .select({ id: pricingRules.id })
+    .from(pricingRules)
+    .limit(1);
+
+  if (existingRules.length === 0) {
+    await db.insert(pricingRules).values({
+      // Calibrated against real Uber/Cabify fares for Mendoza routes
+      // (Guaymallen -> Plaza Shopping/Antares/Palmares/Potrerillos), not final.
+      baseFareCents: 150000,
+      perKmCents: 55000,
+      perMinuteCents: 12000,
+      minimumFareCents: 250000,
+      nightMultiplierBasisPoints: 15000, // 1.5x
+      nightStartHour: 22,
+      nightEndHour: 6,
+    });
+  }
 
   await db
     .insert(cars)
