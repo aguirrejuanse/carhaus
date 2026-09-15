@@ -9,8 +9,8 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | Unit | Goal | PR | Depends on | Status |
 |---|---|---|---|---|
 | 1 | Scaffold + schema + seed (Ph.1-2) | PR1 | — | ✅ merged |
-| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | in review |
-| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | pending |
+| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | ✅ merged |
+| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | in progress |
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | pending |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | pending |
 | 6 | Admin login (Ph.7) | PR6 | PR3 | pending |
