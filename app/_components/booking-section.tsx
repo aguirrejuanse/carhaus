@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useTemplatesQuery } from "@/app/_hooks/use-templates-query";
 import type { TemplateItem } from "@/lib/services/templates";
 import { BookingForm, type BookingInitial } from "./booking-form";
+import { TemplateList } from "./template-list";
 
 export function BookingSection({
   initialTemplates,
@@ -22,7 +23,8 @@ export function BookingSection({
 }) {
   // Server-fetched templates seed the query cache; a save from the
   // confirmation page invalidates this and the list refreshes on its own.
-  const { data: templates = [] } = useTemplatesQuery(initialTemplates);
+  const { data: templates = [], isPending } =
+    useTemplatesQuery(initialTemplates);
   const [initial, setInitial] = useState<BookingInitial | undefined>();
   const [formKey, setFormKey] = useState(0);
 
@@ -40,39 +42,16 @@ export function BookingSection({
 
   return (
     <div className="flex w-full flex-col gap-10">
-      {templates.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Tus plantillas
-          </p>
-          <ul className="divide-y divide-border border-y border-border">
-            {templates.map((template) => (
-              <li
-                key={template.id}
-                className="flex items-center justify-between gap-4 py-3"
-              >
-                <div className="flex flex-col">
-                  <p className="font-medium">{template.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {template.legs
-                      .map((leg) => `${leg.origin} → ${leg.destination}`)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => applyTemplate(template)}
-                  className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition-colors hover:opacity-90"
-                >
-                  Repetir
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <BookingForm key={formKey} initial={initial} riderEmail={riderEmail} />
+      <TemplateList
+        templates={templates}
+        isLoading={isPending}
+        onApply={applyTemplate}
+      />
+      {/* Keyed wrapper remounts on template apply — the fade keeps the
+          swap from feeling like a hard cut. */}
+      <div key={formKey} className="animate-in fade-in duration-300">
+        <BookingForm initial={initial} riderEmail={riderEmail} />
+      </div>
     </div>
   );
 }
