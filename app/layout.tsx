@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Outfit, Work_Sans } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${workSans.variable} ${outfit.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
