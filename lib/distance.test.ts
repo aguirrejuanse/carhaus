@@ -25,6 +25,8 @@ describe("GoogleDistanceProvider", () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
       jsonResponse({
         status: "OK",
+        origin_addresses: ["Origin Resolved, Mendoza"],
+        destination_addresses: ["Dest Resolved, Mendoza"],
         rows: [
           {
             elements: [
@@ -42,7 +44,12 @@ describe("GoogleDistanceProvider", () => {
     const provider = new GoogleDistanceProvider("test-key");
     const result = await provider.getDistance("Origin St 1", "Destination Ave 2");
 
-    expect(result).toEqual({ distanceMeters: 12500, durationSeconds: 900 });
+    expect(result).toEqual({
+      distanceMeters: 12500,
+      durationSeconds: 900,
+      resolvedOrigin: "Origin Resolved, Mendoza",
+      resolvedDestination: "Dest Resolved, Mendoza",
+    });
   });
 
   it("passes origin/destination/key as query params to the Distance Matrix endpoint", async () => {
