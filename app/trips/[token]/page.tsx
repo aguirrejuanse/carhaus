@@ -8,6 +8,7 @@
 import { notFound } from "next/navigation";
 import { getTripByPublicToken } from "@/db/queries";
 import { whatsAppLinkForTrip } from "@/lib/notifications";
+import { SaveTemplateButton } from "./save-template";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "medium",
@@ -124,6 +125,20 @@ export default async function TripConfirmationPage({
             Coordinar por WhatsApp{trip.assignedDriver && ` con ${trip.assignedDriver.name}`}
           </a>
         )}
+
+        <SaveTemplateButton
+          legs={trip.legs.map((leg) => ({
+            origin: leg.origin,
+            destination: leg.destination,
+          }))}
+          extras={{
+            snackChoice: trip.extras?.snackChoice ?? "none",
+            spotifyPlaylistUrl: trip.extras?.spotifyPlaylistUrl ?? undefined,
+            acTemperatureCelsius:
+              trip.extras?.acTemperatureCelsius ?? undefined,
+          }}
+          defaultName={`${trip.legs[0].origin} → ${trip.legs[0].destination}`}
+        />
       </section>
     </main>
   );

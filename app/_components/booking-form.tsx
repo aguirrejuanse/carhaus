@@ -56,6 +56,17 @@ interface FormState {
   fields?: Record<string, string[]>;
 }
 
+/** Pre-fill values from a saved template (spec: "Re-request Template" —
+ * dates are never pre-filled: a re-request always re-runs the preview). */
+export interface BookingInitial {
+  origin: string;
+  destination: string;
+  roundTrip: boolean;
+  snackChoice: string;
+  spotifyPlaylistUrl?: string;
+  acTemperatureCelsius?: number;
+}
+
 const SNACK_OPTIONS = [
   { value: "none", label: "Sin snack" },
   { value: "sweet", label: "Dulce" },
@@ -73,11 +84,13 @@ function formatCents(cents: number): string {
   return priceFormatter.format(cents / 100);
 }
 
-export function BookingForm() {
+export function BookingForm({ initial }: { initial?: BookingInitial }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [roundTrip, setRoundTrip] = useState(false);
-  const [snackChoice, setSnackChoice] = useState<string>("none");
+  const [roundTrip, setRoundTrip] = useState(initial?.roundTrip ?? false);
+  const [snackChoice, setSnackChoice] = useState<string>(
+    initial?.snackChoice ?? "none",
+  );
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewStatus, setPreviewStatus] = useState<
     "idle" | "loading" | "error"
@@ -194,6 +207,7 @@ export function BookingForm() {
                 id="origin"
                 name="origin"
                 required
+                defaultValue={initial?.origin}
                 placeholder="Ej. Guaymallén"
                 onChange={bumpLegs}
               />
@@ -205,6 +219,7 @@ export function BookingForm() {
                 id="destination"
                 name="destination"
                 required
+                defaultValue={initial?.destination}
                 placeholder="Ej. Plaza Shopping"
                 onChange={bumpLegs}
               />
@@ -305,6 +320,7 @@ export function BookingForm() {
                 type="number"
                 min={16}
                 max={30}
+                defaultValue={initial?.acTemperatureCelsius}
                 placeholder="22"
               />
             </Field>
@@ -317,6 +333,7 @@ export function BookingForm() {
               id="spotifyPlaylistUrl"
               name="spotifyPlaylistUrl"
               type="url"
+              defaultValue={initial?.spotifyPlaylistUrl}
               placeholder="https://open.spotify.com/playlist/..."
             />
             <FieldError>
