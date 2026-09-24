@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { toDateTimeInputValue } from "@/lib/format";
+import { PlaceInput } from "./place-input";
 import type { FieldErrors } from "./types";
 
 const TRIP_MODE_OPTIONS = [
@@ -61,23 +62,21 @@ export function LegFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(fields?.["legs.0.origin"])}>
           <FieldLabel htmlFor="origin">Origen</FieldLabel>
-          <Input
+          <PlaceInput
             id="origin"
             name="origin"
-            required
             placeholder="Ej. Guaymallén"
-            onChange={onLegChange}
+            onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.origin"]?.[0]}</FieldError>
         </Field>
         <Field data-invalid={Boolean(fields?.["legs.0.destination"])}>
           <FieldLabel htmlFor="destination">Destino</FieldLabel>
-          <Input
+          <PlaceInput
             id="destination"
             name="destination"
-            required
             placeholder="Ej. Plaza Shopping"
-            onChange={onLegChange}
+            onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.destination"]?.[0]}</FieldError>
         </Field>

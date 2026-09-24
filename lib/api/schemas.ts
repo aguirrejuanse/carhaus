@@ -18,6 +18,11 @@ export const legSchema = z.object({
   destination: z.string().min(1),
   /** ISO 8601 timestamp of when the leg departs. */
   scheduledAt: z.iso.datetime(),
+  /** Google `place_id`s when the rider picked an autocomplete suggestion —
+   *  lets the preview route query Distance Matrix by exact place instead
+   *  of re-geocoding ambiguous free text. Never persisted. */
+  originPlaceId: z.string().optional(),
+  destinationPlaceId: z.string().optional(),
 });
 
 export const extrasSchema = z

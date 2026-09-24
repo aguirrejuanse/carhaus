@@ -115,11 +115,20 @@ function buildLegs(
   const departAt = String(formData.get("departAt") ?? "");
   if (!origin || !destination || !departAt) return null;
 
+  // place_ids picked from autocomplete — the round-trip leg swaps them
+  // along with the addresses.
+  const originPlaceId =
+    String(formData.get("originPlaceId") ?? "") || undefined;
+  const destinationPlaceId =
+    String(formData.get("destinationPlaceId") ?? "") || undefined;
+
   const legs = [
     {
       origin,
       destination,
       scheduledAt: new Date(departAt).toISOString(),
+      originPlaceId,
+      destinationPlaceId,
     },
   ];
 
@@ -132,6 +141,8 @@ function buildLegs(
       origin: destination,
       destination: origin,
       scheduledAt: new Date(returnAt).toISOString(),
+      originPlaceId: destinationPlaceId,
+      destinationPlaceId: originPlaceId,
     });
   }
 

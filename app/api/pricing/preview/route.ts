@@ -29,6 +29,12 @@ const previewSchema = z.object({
   legs: z.array(legSchema).min(1).max(2),
 });
 
+/** Distance Matrix accepts `place_id:` references — an exact place beats
+ *  re-geocoding free text when the rider picked an autocomplete option. */
+function distanceRef(text: string, placeId?: string): string {
+  return placeId ? `place_id:${placeId}` : text;
+}
+
 export const POST = mutationRoute({
   schema: previewSchema,
   handler: async (input) => {
@@ -44,7 +50,10 @@ export const POST = mutationRoute({
             durationSeconds,
             resolvedOrigin,
             resolvedDestination,
-          } = await provider.getDistance(leg.origin, leg.destination);
+          } = await provider.getDistance(
+            distanceRef(leg.origin, leg.originPlaceId),
+            distanceRef(leg.destination, leg.destinationPlaceId),
+          );
           return {
             sequence: (index + 1) as 1 | 2,
             origin: leg.origin,

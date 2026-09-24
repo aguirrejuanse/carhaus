@@ -11,12 +11,13 @@ import { ApiError, type ApiErrorBody, type ApiSuccessBody } from "./api/errors";
 
 export async function apiFetch<T>(
   path: string,
-  opts: { method?: string; body?: unknown } = {},
+  opts: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<T> {
   const res = await fetch(path, {
     method: opts.method ?? "POST",
     headers: { "content-type": "application/json" },
     credentials: "same-origin",
+    signal: opts.signal,
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
   });
 

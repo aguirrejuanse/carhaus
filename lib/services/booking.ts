@@ -10,6 +10,10 @@ export interface TripLegInput {
   origin: string;
   destination: string;
   scheduledAt: string;
+  /** Set when the rider picked a Places suggestion — improves distance
+   *  accuracy (`place_id:` beats re-geocoding free text). */
+  originPlaceId?: string;
+  destinationPlaceId?: string;
 }
 
 export interface TripExtrasInput {
