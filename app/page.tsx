@@ -31,7 +31,7 @@ export default async function Home() {
 
       <hr className="border-border" />
 
-      <BookingSection templates={templates} />
+      <BookingSection initialTemplates={templates} />
     </main>
   );
 }

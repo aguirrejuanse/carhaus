@@ -6,53 +6,30 @@
  * `POST /api/trips` — without it the API returns 401 and we show a hint.
  */
 
-import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/errors";
-import { apiFetch } from "@/lib/api-client";
+import { useSaveTemplateMutation } from "@/app/_hooks/use-save-template-mutation";
+import type { SaveTemplateInput } from "@/lib/services/templates";
 
 interface Props {
-  legs: Array<{ origin: string; destination: string }>;
-  extras: {
-    snackChoice: string;
-    spotifyPlaylistUrl?: string;
-    acTemperatureCelsius?: number;
-  };
+  legs: SaveTemplateInput["legs"];
+  extras: SaveTemplateInput["extras"];
   defaultName: string;
 }
 
-interface FormState {
-  error?: string;
-  saved?: boolean;
-}
-
 export function SaveTemplateButton({ legs, extras, defaultName }: Props) {
-  const [state, formAction, isPending] = useActionState(
-    async (_prev: FormState, formData: FormData): Promise<FormState> => {
-      try {
-        await apiFetch("/api/templates", {
-          body: {
-            name: String(formData.get("name") ?? defaultName),
-            legs,
-            extras,
-          },
-        });
-        return { saved: true };
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
-          return {
-            error:
-              "Necesitás una sesión de reserva activa para guardar plantillas.",
-          };
-        }
-        return { error: "No pudimos guardar la plantilla. Probá de nuevo." };
-      }
-    },
-    {},
-  );
+  const save = useSaveTemplateMutation();
 
-  if (state.saved) {
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name =
+      String(new FormData(event.currentTarget).get("name") ?? "").trim() ||
+      defaultName;
+    save.mutate({ name, legs, extras });
+  };
+
+  if (save.isSuccess) {
     return (
       <p className="text-sm font-medium text-foreground">
         Guardada como plantilla — la próxima vez la podés repetir en un click.
@@ -60,8 +37,15 @@ export function SaveTemplateButton({ legs, extras, defaultName }: Props) {
     );
   }
 
+  const errorMessage =
+    save.error instanceof ApiError && save.error.status === 401
+      ? "Necesitás una sesión de reserva activa para guardar plantillas."
+      : save.isError
+        ? "No pudimos guardar la plantilla. Probá de nuevo."
+        : null;
+
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form onSubmit={onSubmit} className="flex flex-col gap-2">
       <div className="flex gap-2">
         <Input
           name="name"
@@ -69,13 +53,13 @@ export function SaveTemplateButton({ legs, extras, defaultName }: Props) {
           aria-label="Nombre de la plantilla"
           className="max-w-xs"
         />
-        <Button type="submit" variant="outline" disabled={isPending}>
-          {isPending ? "Guardando…" : "Guardar plantilla"}
+        <Button type="submit" variant="outline" disabled={save.isPending}>
+          {save.isPending ? "Guardando…" : "Guardar plantilla"}
         </Button>
       </div>
-      {state.error && (
+      {errorMessage && (
         <p role="alert" className="text-sm text-destructive">
-          {state.error}
+          {errorMessage}
         </p>
       )}
     </form>

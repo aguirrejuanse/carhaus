@@ -9,19 +9,18 @@
  */
 
 import { useState } from "react";
-import type { TemplateLeg } from "@/db/schema";
+import { useTemplatesQuery } from "@/app/_hooks/use-templates-query";
+import type { TemplateItem } from "@/lib/services/templates";
 import { BookingForm, type BookingInitial } from "./booking-form";
 
-export interface TemplateItem {
-  id: string;
-  name: string;
-  legs: TemplateLeg[];
-  snackChoice: string;
-  spotifyPlaylistUrl: string | null;
-  acTemperatureCelsius: number | null;
-}
-
-export function BookingSection({ templates }: { templates: TemplateItem[] }) {
+export function BookingSection({
+  initialTemplates,
+}: {
+  initialTemplates: TemplateItem[];
+}) {
+  // Server-fetched templates seed the query cache; a save from the
+  // confirmation page invalidates this and the list refreshes on its own.
+  const { data: templates = [] } = useTemplatesQuery(initialTemplates);
   const [initial, setInitial] = useState<BookingInitial | undefined>();
   const [formKey, setFormKey] = useState(0);
 

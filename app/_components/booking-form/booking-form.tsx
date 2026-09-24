@@ -2,10 +2,8 @@
 
 /**
  * Rider booking form (spec: "Rider Trip Request", "Price Preview", "Trip
- * Extras"). Mutations go through Route Handlers via `apiFetch` — no Server
- * Actions (design decision #2). `useActionState` still works because React
- * 19 accepts any async function as a form action (design "Client
- * Convention").
+ * Extras"). Mutations go through Route Handlers via TanStack `useMutation`
+ * over `apiFetch` — no Server Actions (design decision #2).
  *
  * Composition shell — state lives in `useBookingForm`, sections in
  * sibling subcomponents.
@@ -23,26 +21,26 @@ export function BookingForm({ initial }: { initial?: BookingInitial }) {
   const form = useBookingForm(initial);
 
   return (
-    <form ref={form.formRef} action={form.formAction} className="w-full">
+    <form ref={form.formRef} onSubmit={form.onSubmit} className="w-full">
       <FieldGroup>
         <LegFields
-          fields={form.state.fields}
+          fields={form.fields}
           roundTrip={form.roundTrip}
           initial={initial}
           onRoundTripChange={form.setRoundTrip}
           onLegChange={form.bumpLegs}
         />
         <ExtrasFields
-          fields={form.state.fields}
+          fields={form.fields}
           snackChoice={form.snackChoice}
           initial={initial}
           onSnackChange={form.setSnackChoice}
         />
         <PreviewPanel preview={form.preview} status={form.previewStatus} />
 
-        {form.state.error && (
+        {form.error && (
           <p role="alert" className="text-sm text-destructive">
-            {form.state.error}
+            {form.error}
           </p>
         )}
 
