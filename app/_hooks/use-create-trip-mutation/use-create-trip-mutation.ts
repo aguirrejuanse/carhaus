@@ -23,6 +23,9 @@ export function useCreateTripMutation() {
   return useMutation({
     mutationFn: (params: CreateTripParams) => submitTripRequest(params),
     onSuccess: ({ publicToken }) => {
+      // refresh() before push — a just-verified rider would otherwise see
+      // the stale anonymous header (cached layout) on the confirmation.
+      router.refresh();
       router.push(`/trips/${publicToken}`);
     },
   });
