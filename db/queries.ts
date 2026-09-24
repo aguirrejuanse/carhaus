@@ -9,12 +9,14 @@ import {
   pricingRules,
   tripExtras,
   tripLegs,
+  tripTemplates,
   trips,
   users,
   NOTIFICATION_CHANNEL,
   NOTIFICATION_STATUS,
   TRIP_STATUS,
   type SnackChoice,
+  type TemplateLeg,
   type TripType,
 } from "@/db/schema";
 import { ApiError } from "@/lib/api/errors";
@@ -261,6 +263,45 @@ export async function markNotificationFailed(id: string, message: string) {
     .update(notifications)
     .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
     .where(eq(notifications.id, id));
+}
+
+/** Rider identity resolution — the `carhaus_rider` cookie stores userId. */
+export async function getUserById(id: string) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user ?? null;
+}
+
+// -----------------------------------------------------------------------------
+// Templates (spec: "Save Recurring Template", "Session-Scoped Template
+// Listing") — scoped by rider email, resolved from the session cookie.
+// -----------------------------------------------------------------------------
+
+export async function listTemplatesByRiderEmail(riderEmail: string) {
+  return await db
+    .select()
+    .from(tripTemplates)
+    .where(eq(tripTemplates.riderEmail, riderEmail))
+    .orderBy(desc(tripTemplates.createdAt));
+}
+
+export async function createTemplate(input: {
+  riderEmail: string;
+  name: string;
+  tripType: TripType;
+  legs: TemplateLeg[];
+  snackChoice: SnackChoice;
+  spotifyPlaylistUrl?: string;
+  acTemperatureCelsius?: number;
+}) {
+  const [template] = await db
+    .insert(tripTemplates)
+    .values(input)
+    .returning();
+  return template;
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */

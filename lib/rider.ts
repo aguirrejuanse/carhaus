@@ -10,6 +10,7 @@
  */
 
 import { SignJWT, jwtVerify } from "jose";
+import { getUserById } from "@/db/queries";
 import { getEnv } from "./env";
 
 export const RIDER_COOKIE_NAME = "carhaus_rider";
@@ -45,4 +46,24 @@ export async function verifyRiderSession(token: string): Promise<string | null> 
   } catch {
     return null;
   }
+}
+
+export interface RiderSession {
+  userId: string;
+  email: string;
+}
+
+/**
+ * Resolves a raw `carhaus_rider` cookie value to the rider's identity
+ * (userId + email — templates are keyed by email per the schema). `null`
+ * for absent/invalid/expired tokens or a deleted user.
+ */
+export async function riderFromCookieValue(
+  token: string | undefined,
+): Promise<RiderSession | null> {
+  if (!token) return null;
+  const userId = await verifyRiderSession(token);
+  if (!userId) return null;
+  const user = await getUserById(userId);
+  return user ? { userId: user.id, email: user.email } : null;
 }

@@ -224,14 +224,20 @@ export const notifications = pgTable("notifications", {
     .defaultNow(),
 });
 
+export interface TemplateLeg {
+  sequence: 1 | 2;
+  origin: string;
+  destination: string;
+}
+
 export const tripTemplates = pgTable("trip_templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   riderEmail: text("rider_email").notNull(),
   name: text("name").notNull(),
   tripType: tripTypeEnum("trip_type").notNull(),
-  // Array of { sequence: 1 | 2, origin: string, destination: string } — no
-  // scheduledAt/price here, re-request always re-runs price preview.
-  legs: jsonb("legs").notNull(),
+  // Array of TemplateLeg — no scheduledAt/price here, re-request always
+  // re-runs price preview.
+  legs: jsonb("legs").$type<TemplateLeg[]>().notNull(),
   snackChoice: snackChoiceEnum("snack_choice")
     .notNull()
     .default(SNACK_CHOICE.NONE),
