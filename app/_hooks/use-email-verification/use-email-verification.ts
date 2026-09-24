@@ -24,14 +24,15 @@ export function useEmailVerification(
   const requestedFor = useRef<string | undefined>(undefined);
   const targetEmail = lockedEmail ?? enteredEmail;
 
+  const countdownActive = resendSeconds > 0;
   useEffect(() => {
-    if (resendSeconds <= 0) return;
+    if (!countdownActive) return;
     const timer = setInterval(
       () => setResendSeconds((s) => Math.max(0, s - 1)),
       1000,
     );
     return () => clearInterval(timer);
-  }, [resendSeconds]);
+  }, [countdownActive]);
 
   const sendCode = (target: string) => {
     if (!target || requestOtp.isPending) return;
