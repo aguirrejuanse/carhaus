@@ -43,6 +43,7 @@ export function useEmailVerification(
 
   const sendCode = (target: string) => {
     if (!target || requestOtp.isPending) return;
+    verify.reset(); // a stale verify error must not survive a new send
     requestedFor.current = target;
     requestOtp.mutate(target, {
       onSuccess: () => {
@@ -69,6 +70,7 @@ export function useEmailVerification(
       sendCode(targetEmail);
       return;
     }
+    requestOtp.reset(); // a stale request error must not survive a verify
     verify.mutate(
       { email: targetEmail, code },
       { onSuccess: () => onVerified(targetEmail) },

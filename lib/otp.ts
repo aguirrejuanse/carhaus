@@ -102,7 +102,10 @@ export async function requestEmailCode(
         }),
         attachments: logoAttachments(logo),
       },
-      { idempotencyKey: `otp/${row?.id ?? crypto.randomUUID()}` },
+      // The row survives re-requests (upsert keeps its id), so key the
+      // send by the code itself — unique per issued code, and a Resend
+      // retry of THIS send replays safely.
+      { idempotencyKey: `otp/${hashCode(email, code)}` },
     );
   } catch (error) {
     // A failed send must not leave a live row — it would lock the rider
