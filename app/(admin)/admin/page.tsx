@@ -7,20 +7,9 @@
 
 import Link from "next/link";
 import { getPendingTrips } from "@/db/queries";
+import { formatCents, formatLegDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "America/Argentina/Buenos_Aires",
-});
-
-const priceFormatter = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "ARS",
-  maximumFractionDigits: 0,
-});
 
 export default async function AdminPage() {
   const pending = await getPendingTrips();
@@ -28,9 +17,6 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Carhaus · Admin
-        </p>
         <h1 className="font-heading text-5xl font-bold tracking-tight">
           Viajes pendientes
         </h1>
@@ -56,13 +42,13 @@ export default async function AdminPage() {
                       .join(" · ")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {dateFormatter.format(trip.legs[0].scheduledAt)}
+                    {formatLegDateTime(trip.legs[0].scheduledAt)}
                     {trip.legs.length === 2 && " · ida y vuelta"}
                   </p>
                 </div>
                 <p className="font-heading text-lg font-semibold">
                   {trip.totalPriceCents > 0
-                    ? priceFormatter.format(trip.totalPriceCents / 100)
+                    ? formatCents(trip.totalPriceCents)
                     : "Sin precio"}
                 </p>
               </Link>

@@ -15,14 +15,8 @@ import { useAdminTripMutation } from "@/app/_hooks/use-admin-trip-mutation";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ApiError } from "@/lib/api/errors";
+import { FleetSelect } from "./fleet-select";
 
 interface Fleet {
   cars: Array<{ id: string; make: string; model: string; plate: string }>;
@@ -64,44 +58,20 @@ export function TripActions({
     <section className="flex flex-col gap-6 border-t border-border pt-8">
       <FieldGroup>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel>Auto</FieldLabel>
-            <Select
-              items={carItems}
-              value={carId}
-              onValueChange={setCarId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Elegí un auto" />
-              </SelectTrigger>
-              <SelectContent>
-                {carItems.map((car) => (
-                  <SelectItem key={car.value} value={car.value}>
-                    {car.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Chofer</FieldLabel>
-            <Select
-              items={driverItems}
-              value={driverId}
-              onValueChange={setDriverId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Elegí un chofer" />
-              </SelectTrigger>
-              <SelectContent>
-                {driverItems.map((driver) => (
-                  <SelectItem key={driver.value} value={driver.value}>
-                    {driver.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <FleetSelect
+            label="Auto"
+            placeholder="Elegí un auto"
+            options={carItems}
+            value={carId}
+            onChange={setCarId}
+          />
+          <FleetSelect
+            label="Chofer"
+            placeholder="Elegí un chofer"
+            options={driverItems}
+            value={driverId}
+            onChange={setDriverId}
+          />
         </div>
 
         <Field>
