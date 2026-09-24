@@ -2,6 +2,7 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  admins,
   pricingRules,
   TRIP_TYPE,
   tripExtras,
@@ -165,6 +166,16 @@ export async function getTripsByUserId(userId: string) {
     .where(eq(trips.userId, userId))
     .orderBy(desc(trips.createdAt))
     .limit(10);
+}
+
+/** Admin login lookup — the only place `passwordHash` is read. */
+export async function getAdminByEmail(email: string) {
+  const [admin] = await db
+    .select()
+    .from(admins)
+    .where(eq(admins.email, email))
+    .limit(1);
+  return admin ?? null;
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */

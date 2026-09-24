@@ -1,48 +1,19 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ApiError } from "./errors";
 import { assertSameOrigin } from "./guards";
 
 const APP_ORIGIN = "https://carhaus.example.com";
-const originalEnv: Record<string, string | undefined> = {};
-const ENV_KEYS = [
-  "APP_ORIGIN",
-  "DATABASE_URL",
-  "JWT_SECRET",
-  "QUOTE_SECRET",
-  "GOOGLE_MAPS_API_KEY",
-] as const;
 
-function buildRequest(origin: string | null): NextRequest {
+function buildRequest(origin: string | null, url = APP_ORIGIN): NextRequest {
   const headers = new Headers();
   if (origin !== null) {
     headers.set("origin", origin);
   }
-  return new NextRequest(`${APP_ORIGIN}/api/trips`, { method: "POST", headers });
+  return new NextRequest(`${url}/api/trips`, { method: "POST", headers });
 }
 
 describe("assertSameOrigin", () => {
-  beforeEach(() => {
-    for (const key of ENV_KEYS) {
-      originalEnv[key] = process.env[key];
-    }
-    process.env.APP_ORIGIN = APP_ORIGIN;
-    process.env.DATABASE_URL = "postgres://user:pass@localhost:5432/carhaus";
-    process.env.JWT_SECRET = "a".repeat(32);
-    process.env.QUOTE_SECRET = "b".repeat(32);
-    process.env.GOOGLE_MAPS_API_KEY = "test-google-maps-api-key";
-  });
-
-  afterEach(() => {
-    for (const key of ENV_KEYS) {
-      if (originalEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = originalEnv[key];
-      }
-    }
-  });
-
   it("throws csrf_origin_mismatch when the Origin header is missing", () => {
     const req = buildRequest(null);
     expect(() => assertSameOrigin(req)).toThrow(ApiError);
@@ -67,8 +38,19 @@ describe("assertSameOrigin", () => {
     }
   });
 
-  it("does not throw when the Origin header matches APP_ORIGIN exactly", () => {
+  it("does not throw when the Origin header matches the request host", () => {
     const req = buildRequest(APP_ORIGIN);
     expect(() => assertSameOrigin(req)).not.toThrow();
+  });
+
+  it("accepts any same-host origin — Vercel branch aliases differ from VERCEL_URL", () => {
+    const alias = "https://carhaus-git-carhaus-pr6-login-x.vercel.app";
+    const req = buildRequest(alias, alias);
+    expect(() => assertSameOrigin(req)).not.toThrow();
+  });
+
+  it("rejects an Origin that matches APP_ORIGIN but hits a different host", () => {
+    const req = buildRequest(APP_ORIGIN, "https://unexpected.vercel.app");
+    expect(() => assertSameOrigin(req)).toThrow(ApiError);
   });
 });

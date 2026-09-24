@@ -14,16 +14,22 @@ async function main() {
   const sql = neon(databaseUrl);
   const db = drizzle(sql, { schema });
 
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "changeme123!";
+  // `||` on purpose: an empty SEED_ADMIN_PASSWORD would silently hash "".
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || "changeme123!";
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
+  // Upsert: re-running the seed with a new SEED_ADMIN_PASSWORD rotates the
+  // password — the only supported way to change it until an admin UI exists.
   await db
     .insert(admins)
     .values({
       email: "admin@carhaus.dev",
       passwordHash,
     })
-    .onConflictDoNothing({ target: admins.email });
+    .onConflictDoUpdate({
+      target: admins.email,
+      set: { passwordHash },
+    });
 
   // pricing_rules has no natural unique key to conflict on (rates are
   // expected to change over time, so re-running this on a live DB should

@@ -1,12 +1,17 @@
 "use client";
 
-/** Clears the `carhaus_rider` cookie via the logout route, then reloads
- *  to the landing (the header disappears with the session). */
+/** Clears a session cookie via its logout route, then navigates to the
+ *  given destination (the header disappears with the session). */
 
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
 
-export function LogoutButton() {
+interface LogoutButtonProps {
+  endpoint: string;
+  redirectTo: string;
+}
+
+export function LogoutButton({ endpoint, redirectTo }: LogoutButtonProps) {
   return (
     <Button
       type="button"
@@ -14,9 +19,9 @@ export function LogoutButton() {
       size="sm"
       onClick={async () => {
         try {
-          await apiFetch("/api/rider/logout", { body: {} });
+          await apiFetch(endpoint, { body: {} });
         } finally {
-          window.location.href = "/";
+          window.location.href = redirectTo;
         }
       }}
     >
