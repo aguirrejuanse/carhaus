@@ -21,25 +21,13 @@ import {
   upsertUserByEmail,
   type NewBookingLeg,
 } from "@/db/queries";
-import { SNACK_CHOICE, TRIP_TYPE, type SnackChoice } from "@/db/schema";
+import { TRIP_TYPE } from "@/db/schema";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
+import { extrasSchema, legSchema } from "@/lib/api/schemas";
 import { getEnv } from "@/lib/env";
 import { verifyQuote } from "@/lib/quote";
-import {
-  RIDER_COOKIE_NAME,
-  RIDER_SESSION_TTL_SECONDS,
-  signRiderSession,
-} from "@/lib/rider";
-
-const snackValues = Object.values(SNACK_CHOICE) as [SnackChoice, ...SnackChoice[]];
-
-const legSchema = z.object({
-  origin: z.string().min(1),
-  destination: z.string().min(1),
-  /** ISO 8601 timestamp of when the leg departs. */
-  scheduledAt: z.iso.datetime(),
-});
+import { riderSessionCookie, signRiderSession } from "@/lib/rider";
 
 const bookingSchema = z.object({
   email: z.email(),
@@ -49,13 +37,7 @@ const bookingSchema = z.object({
   /** Client echoes the legs it previewed; the signed quote is the source
    *  of truth for persisted distance/duration/price when present. */
   legs: z.array(legSchema).min(1).max(2),
-  extras: z
-    .object({
-      snackChoice: z.enum(snackValues).default(SNACK_CHOICE.NONE),
-      spotifyPlaylistUrl: z.url().optional(),
-      acTemperatureCelsius: z.number().int().min(16).max(30).optional(),
-    })
-    .default({ snackChoice: SNACK_CHOICE.NONE }),
+  extras: extrasSchema,
 });
 
 export const POST = mutationRoute({
@@ -106,12 +88,7 @@ export const POST = mutationRoute({
 
     const riderToken = await signRiderSession(user.id);
     const res = jsonSuccess({ publicToken: trip.publicToken }, 201);
-    res.headers.append(
-      "set-cookie",
-      `${RIDER_COOKIE_NAME}=${riderToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${RIDER_SESSION_TTL_SECONDS}${
-        process.env.NODE_ENV === "production" ? "; Secure" : ""
-      }`,
-    );
+    res.headers.append("set-cookie", riderSessionCookie(riderToken));
     return res;
   },
 });
