@@ -3,6 +3,7 @@
 /** "Tu viaje" fieldset: email, origin/destination, departure time, and
  *  the one-way / round-trip toggle. */
 
+import { useState } from "react";
 import {
   Field,
   FieldDescription,
@@ -12,6 +13,7 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toDateTimeInputValue } from "@/lib/format";
 import type { BookingInitial, FieldErrors } from "./types";
 
 const TRIP_MODE_OPTIONS = [
@@ -34,6 +36,9 @@ export function LegFields({
   onRoundTripChange,
   onLegChange,
 }: Props) {
+  const [departAt, setDepartAt] = useState("");
+  const minNow = toDateTimeInputValue(new Date());
+
   return (
     <FieldSet>
       <FieldLegend className="font-heading text-lg font-semibold tracking-tight">
@@ -89,7 +94,11 @@ export function LegFields({
           name="departAt"
           type="datetime-local"
           required
-          onChange={onLegChange}
+          min={minNow}
+          onChange={(event) => {
+            setDepartAt(event.target.value);
+            onLegChange();
+          }}
         />
         <FieldError>{fields?.["legs.0.scheduledAt"]?.[0]}</FieldError>
       </Field>
@@ -101,7 +110,7 @@ export function LegFields({
               key={opt.label}
               type="button"
               onClick={() => onRoundTripChange(opt.value)}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`cursor-pointer rounded-md px-3 py-1.5 text-sm transition-all duration-200 ${
                 roundTrip === opt.value
                   ? "bg-accent font-medium text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -114,13 +123,17 @@ export function LegFields({
       </Field>
 
       {roundTrip && (
-        <Field data-invalid={Boolean(fields?.["legs.1.scheduledAt"])}>
+        <Field
+          data-invalid={Boolean(fields?.["legs.1.scheduledAt"])}
+          className="animate-in fade-in slide-in-from-top-2 duration-200"
+        >
           <FieldLabel htmlFor="returnAt">Fecha y hora de vuelta</FieldLabel>
           <Input
             id="returnAt"
             name="returnAt"
             type="datetime-local"
             required={roundTrip}
+            min={departAt || minNow}
             onChange={onLegChange}
           />
           <FieldDescription>

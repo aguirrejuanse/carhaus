@@ -13,7 +13,7 @@ export function PreviewPanel({
 }) {
   if (status === "loading") {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="animate-in fade-in text-sm text-muted-foreground duration-300">
         Calculando precio estimado…
       </p>
     );
@@ -21,7 +21,7 @@ export function PreviewPanel({
 
   if (status === "error") {
     return (
-      <div className="rounded-lg border border-border p-4 text-sm">
+      <div className="animate-in fade-in slide-in-from-bottom-2 rounded-lg border border-border p-4 text-sm duration-300">
         <p className="font-medium">No pudimos calcular el precio ahora.</p>
         <p className="text-muted-foreground">
           Podés enviar la solicitud igual y te confirmamos el valor por mail.
@@ -33,7 +33,7 @@ export function PreviewPanel({
   if (!preview) return null;
 
   return (
-    <div className="rounded-lg border border-border p-4">
+    <div className="animate-in fade-in slide-in-from-bottom-2 rounded-lg border border-border p-4 duration-300">
       <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
         Precio estimado
       </p>

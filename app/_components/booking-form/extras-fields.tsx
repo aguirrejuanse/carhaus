@@ -47,6 +47,7 @@ export function ExtrasFields({
         <Field>
           <FieldLabel>Snack</FieldLabel>
           <Select
+            items={SNACK_OPTIONS}
             value={snackChoice}
             onValueChange={(value) => onSnackChange(value ?? "none")}
           >
