@@ -41,13 +41,29 @@ export function PreviewPanel({
         {formatCents(preview.quote.totalPriceCents)}
       </p>
       <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-        {preview.quote.legs.map((leg) => (
+        {preview.quote.legs.map((leg, index) => (
           <li key={leg.sequence}>
             {leg.sequence === 1 ? "Ida" : "Vuelta"}:{" "}
             {formatCents(leg.priceCents)}
+            {preview.resolved[index] && (
+              <span className="block text-xs">
+                {preview.resolved[index].origin} →{" "}
+                {preview.resolved[index].destination}
+              </span>
+            )}
           </li>
         ))}
       </ul>
+      {/* eslint-disable-next-line @next/next/no-img-element -- proxied static map, not a Next-optimizable asset */}
+      <img
+        src={preview.mapUrl}
+        alt="Mapa del recorrido"
+        className="mt-3 w-full rounded-md border border-border"
+        loading="lazy"
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+        }}
+      />
     </div>
   );
 }

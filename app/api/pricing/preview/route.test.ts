@@ -76,6 +76,8 @@ describe("POST /api/pricing/preview", () => {
     vi.spyOn(GoogleDistanceProvider.prototype, "getDistance").mockResolvedValue({
       distanceMeters: 10000,
       durationSeconds: 1200,
+      resolvedOrigin: "Guaymallén, Mendoza, Argentina",
+      resolvedDestination: "Plaza Shopping, Mendoza, Argentina",
     });
 
     const res = await POST(buildRequest(validBody));
@@ -86,6 +88,12 @@ describe("POST /api/pricing/preview", () => {
     // 150000 + 10km*55000 + 20min*12000 = 940000, no night multiplier.
     expect(json.data.quote.totalPriceCents).toBe(940000);
     expect(json.data.quote.legs).toHaveLength(1);
+    expect(json.data.resolved[0]).toEqual({
+      origin: "Guaymallén, Mendoza, Argentina",
+      destination: "Plaza Shopping, Mendoza, Argentina",
+    });
+    expect(json.data.mapUrl).toContain("/api/map/static?");
+    expect(json.data.mapUrl).toContain("sig=");
 
     const payload = verifyQuote(json.data.token, QUOTE_SECRET);
     expect(payload.totalPriceCents).toBe(json.data.quote.totalPriceCents);
@@ -95,7 +103,12 @@ describe("POST /api/pricing/preview", () => {
   it("prices each leg independently for a 2-leg round trip", async () => {
     const getDistance = vi
       .spyOn(GoogleDistanceProvider.prototype, "getDistance")
-      .mockResolvedValue({ distanceMeters: 10000, durationSeconds: 1200 });
+      .mockResolvedValue({
+        distanceMeters: 10000,
+        durationSeconds: 1200,
+        resolvedOrigin: "A",
+        resolvedDestination: "B",
+      });
 
     const res = await POST(
       buildRequest({
