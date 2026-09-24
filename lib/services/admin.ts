@@ -11,3 +11,17 @@ export function adminLogin(input: {
 }): Promise<{ email: string }> {
   return apiFetch<{ email: string }>("/api/admin/login", { body: input });
 }
+
+export type AdminTripAction =
+  | { action: "approve"; carId: string; driverId: string }
+  | { action: "reject"; reason?: string };
+
+export function adminUpdateTrip(
+  tripId: string,
+  input: AdminTripAction,
+): Promise<{ trip: { status: string } }> {
+  return apiFetch<{ trip: { status: string } }>(`/api/admin/trips/${tripId}`, {
+    method: "PATCH",
+    body: input,
+  });
+}

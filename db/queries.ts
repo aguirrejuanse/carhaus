@@ -1,9 +1,14 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
+  cars,
+  drivers,
+  notifications,
+  NOTIFICATION_CHANNEL,
   pricingRules,
+  TRIP_STATUS,
   TRIP_TYPE,
   tripExtras,
   tripLegs,
@@ -176,6 +181,115 @@ export async function getAdminByEmail(email: string) {
     .where(eq(admins.email, email))
     .limit(1);
   return admin ?? null;
+}
+
+// -----------------------------------------------------------------------------
+// Admin
+// -----------------------------------------------------------------------------
+
+/** Pending queue for the admin dashboard (spec: "Admin Review Queue"). */
+export async function getPendingTrips() {
+  return await db.query.trips.findMany({
+    where: eq(trips.status, TRIP_STATUS.PENDING),
+    orderBy: asc(trips.createdAt),
+    with: {
+      legs: { orderBy: (leg, { asc: ascOrder }) => ascOrder(leg.sequence) },
+      extras: true,
+      user: { columns: { email: true } },
+    },
+  });
+}
+
+/** Full admin detail for one trip (queue → approve/reject screen). */
+export async function getTripForAdmin(id: string) {
+  return await db.query.trips.findFirst({
+    where: eq(trips.id, id),
+    with: {
+      legs: { orderBy: (leg, { asc: ascOrder }) => ascOrder(leg.sequence) },
+      extras: true,
+      user: { columns: { email: true } },
+      assignedCar: true,
+      assignedDriver: true,
+    },
+  });
+}
+
+export async function getActiveCars() {
+  return await db.select().from(cars).where(eq(cars.active, true));
+}
+
+export async function getDrivers() {
+  return await db.select().from(drivers);
+}
+
+/**
+ * Approves a pending trip with a car/driver assignment (spec: "Approve
+ * with Assignment"). Runs as one neon-http batch transaction (design
+ * decision #9): the conditional `UPDATE ... WHERE status='pending'` kills
+ * double-approval races, and the notification row is queued via a guarded
+ * `INSERT ... SELECT` that only produces a row while the trip reads
+ * `approved` inside the same transaction. Returns the updated trip, or
+ * `null` when the trip wasn't pending (caller maps to `409
+ * trip_not_pending`).
+ */
+export async function approveTrip(input: {
+  tripId: string;
+  carId: string;
+  driverId: string;
+  riderEmail: string;
+}) {
+  const [updated] = await db.batch([
+    db
+      .update(trips)
+      .set({
+        status: TRIP_STATUS.APPROVED,
+        assignedCarId: input.carId,
+        assignedDriverId: input.driverId,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(trips.id, input.tripId), eq(trips.status, TRIP_STATUS.PENDING)),
+      )
+      .returning(),
+    db.insert(notifications).select(
+      db
+        .select({
+          tripId: sql<string>`${input.tripId}::uuid`.as("trip_id"),
+          channel: sql<string>`${NOTIFICATION_CHANNEL.EMAIL}`.as("channel"),
+          recipient: sql<string>`${input.riderEmail}`.as("recipient"),
+        })
+        .from(trips)
+        .where(
+          and(
+            eq(trips.id, input.tripId),
+            eq(trips.status, TRIP_STATUS.APPROVED),
+          ),
+        )
+        .limit(1),
+    ),
+  ]);
+
+  return updated[0] ?? null;
+}
+
+/**
+ * Rejects a pending trip (spec: "Reject Trip" — no notification row is
+ * created). Conditional update, same race-kill as `approveTrip`.
+ */
+export async function rejectTrip(input: { tripId: string; reason?: string }) {
+  const [updated] = await db
+    .update(trips)
+    .set({
+      status: TRIP_STATUS.REJECTED,
+      rejectionReason: input.reason ?? null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(trips.id, input.tripId), eq(trips.status, TRIP_STATUS.PENDING)),
+    )
+    .returning();
+
+  return updated ?? null;
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
