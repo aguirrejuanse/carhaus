@@ -49,6 +49,13 @@ export async function signAdminSession(
     .sign(getSigningKey());
 }
 
+/** `Set-Cookie` header value that expires the admin session immediately. */
+export function clearAdminSessionCookie(): string {
+  return `${ADMIN_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${
+    process.env.NODE_ENV === "production" ? "; Secure" : ""
+  }`;
+}
+
 /**
  * Verifies signature and expiry, returning the decoded payload. Throws
  * `AdminSessionError` for any absent/expired/tampered/malformed token.

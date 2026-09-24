@@ -7,19 +7,33 @@
  */
 
 import type { NextRequest } from "next/server";
-import { getEnv } from "@/lib/env";
 import { ApiError } from "./errors";
 
 /**
- * Requires the request's `Origin` header to be present and strictly equal
- * to `APP_ORIGIN`. There is no third-party embed in the MVP, so exact
- * string equality is sufficient — no wildcard/subdomain matching.
+ * Requires the request's `Origin` header to be present and to point at the
+ * host that received the request — the literal definition of same-origin.
+ *
+ * Comparing against `APP_ORIGIN`/`VERCEL_URL` breaks Vercel previews: the
+ * branch alias (`carhaus-git-…`) and the deployment URL (`carhaus-xxxx…`)
+ * are different hosts serving the same deployment, so a strict env
+ * comparison 403s legitimate browser requests. Host equality cannot be
+ * forged by a cross-origin attacker: the victim's browser always sends the
+ * real target host.
  */
 export function assertSameOrigin(req: NextRequest): void {
   const origin = req.headers.get("origin");
-  const appOrigin = getEnv().APP_ORIGIN;
+  const host = req.headers.get("host") ?? req.nextUrl.host;
 
-  if (!origin || origin !== appOrigin) {
+  let originHost: string | null = null;
+  if (origin) {
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      originHost = null;
+    }
+  }
+
+  if (!originHost || originHost !== host) {
     throw new ApiError(
       403,
       "csrf_origin_mismatch",

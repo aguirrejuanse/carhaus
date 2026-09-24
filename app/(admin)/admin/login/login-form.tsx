@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { useAdminLoginMutation } from "@/app/_hooks/use-admin-login-mutation";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -10,6 +12,7 @@ import { ApiError } from "@/lib/api/errors";
 export function LoginForm() {
   const router = useRouter();
   const login = useAdminLoginMutation();
+  const [showPassword, setShowPassword] = useState(false);
   const apiError = login.error instanceof ApiError ? login.error : null;
 
   return (
@@ -45,13 +48,26 @@ export function LoginForm() {
         </Field>
         <Field data-invalid={Boolean(apiError?.fields?.password)}>
           <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="current-password"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={
+                showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+              }
+              className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors duration-200 hover:text-foreground"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
           <FieldError>{apiError?.fields?.password?.[0]}</FieldError>
         </Field>
 

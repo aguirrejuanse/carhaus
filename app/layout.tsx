@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Outfit, Work_Sans } from "next/font/google";
+import { AppHeader } from "./_components/app-header";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -34,7 +35,12 @@ export default function RootLayout({
       <body
         className={`${workSans.variable} ${outfit.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <header className="mx-auto w-full max-w-2xl px-6 pt-6">
+            <AppHeader />
+          </header>
+          {children}
+        </Providers>
       </body>
     </html>
   );
