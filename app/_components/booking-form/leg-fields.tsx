@@ -15,12 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { toDateTimeInputValue } from "@/lib/format";
 import { PlaceInput } from "./place-input";
+import { TripModeToggle } from "./trip-mode-toggle";
 import type { BookingInitial, FieldErrors } from "./types";
-
-const TRIP_MODE_OPTIONS = [
-  { value: false, label: "Solo ida" },
-  { value: true, label: "Ida y vuelta" },
-] as const;
 
 interface Props {
   fields: FieldErrors;
@@ -103,22 +99,7 @@ export function LegFields({
       </Field>
 
       <Field orientation="horizontal">
-        <div className="inline-flex rounded-lg border border-border p-0.5">
-          {TRIP_MODE_OPTIONS.map((opt) => (
-            <button
-              key={opt.label}
-              type="button"
-              onClick={() => onRoundTripChange(opt.value)}
-              className={`cursor-pointer rounded-md px-3 py-1.5 text-sm transition-all duration-200 ${
-                roundTrip === opt.value
-                  ? "bg-accent font-medium text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <TripModeToggle roundTrip={roundTrip} onChange={onRoundTripChange} />
       </Field>
 
       {roundTrip && (
