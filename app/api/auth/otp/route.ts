@@ -17,8 +17,11 @@ const otpSchema = z.object({
 
 export const POST = mutationRoute({
   schema: otpSchema,
-  handler: async (input) => {
-    await requestEmailCode(input.email);
+  handler: async (input, req) => {
+    // x-forwarded-for on Vercel; falls back absent (local dev) — the IP
+    // cap simply doesn't apply without it.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    await requestEmailCode(input.email, ip);
     return jsonSuccess({ sent: true });
   },
 });

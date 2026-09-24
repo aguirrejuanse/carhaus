@@ -255,6 +255,7 @@ function resolutionEmailHtml(
 async function sendResolutionEmail(
   trip: TripContactInfo,
   to: string,
+  idempotencyKey: string,
 ): Promise<void> {
   const status = EMAIL_STATUS[trip.status];
   if (!status) throw new Error(`No email template for status "${trip.status}"`);
@@ -264,15 +265,18 @@ async function sendResolutionEmail(
     ? "cid:logo"
     : `${getEnv().APP_ORIGIN}/logo-header.png`;
 
-  await sendEmail({
-    to,
-    subject: status.subject,
-    text: resolutionEmailText(trip),
-    html: resolutionEmailHtml(trip, logoSrc),
-    attachments: logo
-      ? [{ filename: "logo-header.png", content: logo, contentId: "logo" }]
-      : undefined,
-  });
+  await sendEmail(
+    {
+      to,
+      subject: status.subject,
+      text: resolutionEmailText(trip),
+      html: resolutionEmailHtml(trip, logoSrc),
+      attachments: logo
+        ? [{ filename: "logo-header.png", content: logo, contentId: "logo" }]
+        : undefined,
+    },
+    { idempotencyKey },
+  );
 }
 
 /**
@@ -290,7 +294,11 @@ export async function dispatchTripNotification(
   try {
     const trip = await getTripForAdmin(tripId);
     if (!trip) throw new Error("Trip not found after resolution");
-    await sendResolutionEmail(trip, notification.recipient);
+    await sendResolutionEmail(
+      trip,
+      notification.recipient,
+      `notification/${notification.id}`,
+    );
     await markNotificationSent(notification.id);
   } catch (error) {
     await markNotificationFailed(

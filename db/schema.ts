@@ -224,14 +224,16 @@ export const notifications = pgTable("notifications", {
     .defaultNow(),
 });
 
-/** One active code per email — requesting a new one deletes the previous
- *  (see db/queries.ts). Codes are stored HMAC-hashed, expire in 10 min,
- *  and allow max 5 verify attempts. */
+/** One active code per email — the unique constraint enforces it (the
+ *  upsert in db/queries.ts resets attempts on re-request). Codes are
+ *  stored HMAC-hashed, expire in 10 min, and allow max 5 verify attempts.
+ *  `requestIp` feeds the per-IP request cap. */
 export const verificationCodes = pgTable("verification_codes", {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   codeHash: text("code_hash").notNull(),
   attempts: integer("attempts").notNull().default(0),
+  requestIp: text("request_ip"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

@@ -12,11 +12,15 @@ const store = vi.hoisted(() => ({
   },
 }));
 
+const recentByIp = vi.hoisted(() => ({ count: 0 }));
+
 vi.mock("@/db/queries", () => ({
   getLatestVerificationCode: vi.fn(async () => store.row),
+  countRecentVerificationRequests: vi.fn(async () => recentByIp.count),
   replaceVerificationCode: vi.fn(async (input: {
     email: string;
     codeHash: string;
+    requestIp?: string;
     expiresAt: Date;
   }) => {
     store.row = {
@@ -42,12 +46,17 @@ vi.mock("@/db/queries", () => ({
 }));
 
 const sendEmail = vi.hoisted(() =>
-  vi.fn<(input: {
-    to: string;
-    subject: string;
-    text: string;
-    html?: string;
-  }) => Promise<void>>(async () => {}),
+  vi.fn<
+    (
+      input: {
+        to: string;
+        subject: string;
+        text: string;
+        html?: string;
+      },
+      options?: { idempotencyKey?: string },
+    ) => Promise<void>
+  >(async () => {}),
 );
 vi.mock("@/lib/email", () => ({ sendEmail }));
 
@@ -90,6 +99,7 @@ describe("lib/otp", () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-google-maps-api-key";
     process.env.RESEND_API_KEY = "re_test";
     store.row = null;
+    recentByIp.count = 0;
     vi.clearAllMocks();
   });
 
@@ -108,10 +118,20 @@ describe("lib/otp", () => {
 
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({ to: EMAIL, subject: expect.stringMatching(/\d{6}/) }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^otp\//) }),
     );
     const code = sentCode();
     expect(store.row?.codeHash).toBe(codeHash(EMAIL, code));
     expect(store.row?.codeHash).not.toContain(code);
+  });
+
+  it("caps requests per IP to stop spraying codes at many emails", async () => {
+    recentByIp.count = 20;
+
+    await expect(
+      requestEmailCode(EMAIL, "1.2.3.4"),
+    ).rejects.toMatchObject({ status: 429, code: "otp_ip_limited" });
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
   it("rate-limits repeat requests inside the cooldown", async () => {

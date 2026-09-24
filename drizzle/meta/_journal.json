@@ -15,6 +15,13 @@
       "when": 1790287788559,
       "tag": "0001_glamorous_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790291020094,
+      "tag": "0002_many_northstar",
+      "breakpoints": true
     }
   ]
 }

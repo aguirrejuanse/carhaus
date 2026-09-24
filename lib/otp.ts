@@ -14,6 +14,7 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import {
   bumpVerificationAttempts,
+  countRecentVerificationRequests,
   deleteVerificationCode,
   getLatestVerificationCode,
   replaceVerificationCode,
@@ -26,6 +27,8 @@ import { getEnv } from "./env";
 const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
+const OTP_IP_WINDOW_MS = 60 * 60 * 1000;
+const OTP_IP_MAX_REQUESTS = 20;
 
 function hashCode(email: string, code: string): string {
   return createHmac("sha256", getEnv().JWT_SECRET)
@@ -35,9 +38,25 @@ function hashCode(email: string, code: string): string {
 
 /**
  * Issues a fresh code for `email` and sends it. Throws `429` inside the
- * resend cooldown; Resend/config failures surface as generic 503.
+ * resend cooldown or past the per-IP request cap; Resend/config failures
+ * surface as generic 503.
  */
-export async function requestEmailCode(email: string): Promise<void> {
+export async function requestEmailCode(
+  email: string,
+  requestIp?: string,
+): Promise<void> {
+  if (
+    requestIp &&
+    (await countRecentVerificationRequests(requestIp, OTP_IP_WINDOW_MS)) >=
+      OTP_IP_MAX_REQUESTS
+  ) {
+    throw new ApiError(
+      429,
+      "otp_ip_limited",
+      "Demasiadas solicitudes — probá más tarde",
+    );
+  }
+
   const existing = await getLatestVerificationCode(email);
   if (
     existing &&
@@ -54,11 +73,13 @@ export async function requestEmailCode(email: string): Promise<void> {
   const row = await replaceVerificationCode({
     email,
     codeHash: hashCode(email, code),
+    requestIp,
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   });
 
   try {
-    await sendEmail({
+    await sendEmail(
+      {
       to: email,
       subject: `${code} es tu código Carhaus`,
       text: `Tu código de verificación Carhaus es ${code}. Vence en 10 minutos.`,
@@ -74,7 +95,9 @@ export async function requestEmailCode(email: string): Promise<void> {
     </table>
   </td></tr></table>
 </body></html>`,
-    });
+      },
+      { idempotencyKey: `otp/${row?.id ?? crypto.randomUUID()}` },
+    );
   } catch (error) {
     // A failed send must not leave a live row — it would lock the rider
     // out for the cooldown with a code they never received.

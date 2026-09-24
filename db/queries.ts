@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
@@ -349,24 +349,48 @@ export async function markNotificationFailed(id: string, message: string) {
     .where(eq(notifications.id, id));
 }
 
-// Verification codes (email OTP) — one active code per email; requesting
-// a new one replaces the previous in the same batch.
+// Verification codes (email OTP) — one active code per email, enforced by
+// the unique constraint; a re-request upserts and resets attempts.
 
 export async function replaceVerificationCode(input: {
   email: string;
   codeHash: string;
+  requestIp?: string;
   expiresAt: Date;
 }) {
-  const [, inserted] = await db.batch([
-    db
-      .delete(verificationCodes)
-      .where(eq(verificationCodes.email, input.email)),
-    db
-      .insert(verificationCodes)
-      .values(input)
-      .returning(),
-  ]);
-  return inserted[0] ?? null;
+  const [inserted] = await db
+    .insert(verificationCodes)
+    .values(input)
+    .onConflictDoUpdate({
+      target: verificationCodes.email,
+      set: {
+        codeHash: input.codeHash,
+        requestIp: input.requestIp,
+        expiresAt: input.expiresAt,
+        attempts: 0,
+        createdAt: new Date(),
+      },
+    })
+    .returning();
+  return inserted ?? null;
+}
+
+/** OTP requests from one IP inside `windowMs` — caps spraying codes at
+ *  many different emails (each request leaves its row behind). */
+export async function countRecentVerificationRequests(
+  ip: string,
+  windowMs: number,
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(verificationCodes)
+    .where(
+      and(
+        eq(verificationCodes.requestIp, ip),
+        gt(verificationCodes.createdAt, new Date(Date.now() - windowMs)),
+      ),
+    );
+  return row?.count ?? 0;
 }
 
 /** Latest active code for an email — expiry is checked by the caller so a

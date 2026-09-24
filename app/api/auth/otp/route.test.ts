@@ -11,12 +11,13 @@ const APP_ORIGIN = "https://carhaus.example.com";
 const originalEnv: Record<string, string | undefined> = {};
 const ENV_KEYS = ["APP_ORIGIN", "DATABASE_URL", "JWT_SECRET"] as const;
 
-function buildRequest(body?: unknown): NextRequest {
+function buildRequest(body?: unknown, ip?: string): NextRequest {
   return new NextRequest(`${APP_ORIGIN}/api/auth/otp`, {
     method: "POST",
     headers: new Headers({
       origin: APP_ORIGIN,
       "content-type": "application/json",
+      ...(ip ? { "x-forwarded-for": ip } : {}),
     }),
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -48,7 +49,21 @@ describe("POST /api/auth/otp", () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ data: { sent: true } });
-    expect(requestEmailCode).toHaveBeenCalledWith("rider@example.com");
+    expect(requestEmailCode).toHaveBeenCalledWith(
+      "rider@example.com",
+      undefined,
+    );
+  });
+
+  it("forwards the client IP for the per-IP request cap", async () => {
+    await POST(
+      buildRequest({ email: "rider@example.com" }, "9.9.9.9, 1.1.1.1"),
+    );
+
+    expect(requestEmailCode).toHaveBeenCalledWith(
+      "rider@example.com",
+      "9.9.9.9",
+    );
   });
 
   it("returns 422 for an invalid email", async () => {
