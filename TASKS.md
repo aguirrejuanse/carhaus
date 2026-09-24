@@ -13,7 +13,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | done |
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | open |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | open |
-| 6 | Admin login (Ph.7) | PR6 | PR3 | pending |
+| 6 | Admin login (Ph.7) | PR6 | PR3 | open |
 | 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | pending |
 | 8 | Notifications (Ph.9) | PR8 | PR7 | pending |
 | 9 | Templates (Ph.10) | PR9 | PR5 | pending |
@@ -55,9 +55,9 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 6.5 Integration test: 201 create, 409 bad/expired quote
 
 ## Phase 7: Admin Login
-- [ ] 7.1 `app/api/admin/login/route.ts` POST bcrypt+jose+HttpOnly cookie
-- [ ] 7.2 `app/(admin)/admin/login/page.tsx`
-- [ ] 7.3 Integration test: 200 valid, 401 invalid creds
+- [x] 7.1 `app/api/admin/login/route.ts` POST bcrypt+jose+HttpOnly cookie
+- [x] 7.2 `app/(admin)/admin/login/page.tsx`
+- [x] 7.3 Integration test: 200 valid, 401 invalid creds
 
 ## Phase 8: Admin Approval
 - [ ] 8.1 `app/api/admin/trips/[id]/route.ts` PATCH — requireAdmin, conditional `UPDATE...WHERE status='pending'` batch tx, assign car/driver, insert notifications row (spec: Approve with Assignment, Reject Trip, Trip Immutability)
