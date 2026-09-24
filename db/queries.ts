@@ -16,6 +16,7 @@ import {
   tripTemplates,
   trips,
   users,
+  verificationCodes,
   type SnackChoice,
   type TemplateLeg,
   type TripStatus,
@@ -346,6 +347,49 @@ export async function markNotificationFailed(id: string, message: string) {
     .update(notifications)
     .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
     .where(eq(notifications.id, id));
+}
+
+// Verification codes (email OTP) — one active code per email; requesting
+// a new one replaces the previous in the same batch.
+
+export async function replaceVerificationCode(input: {
+  email: string;
+  codeHash: string;
+  expiresAt: Date;
+}) {
+  const [, inserted] = await db.batch([
+    db
+      .delete(verificationCodes)
+      .where(eq(verificationCodes.email, input.email)),
+    db
+      .insert(verificationCodes)
+      .values(input)
+      .returning(),
+  ]);
+  return inserted[0] ?? null;
+}
+
+/** Latest active code for an email — expiry is checked by the caller so a
+ *  stale row can still be cleaned up deterministically. */
+export async function getLatestVerificationCode(email: string) {
+  const [row] = await db
+    .select()
+    .from(verificationCodes)
+    .where(eq(verificationCodes.email, email))
+    .orderBy(desc(verificationCodes.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function bumpVerificationAttempts(id: string) {
+  await db
+    .update(verificationCodes)
+    .set({ attempts: sql`${verificationCodes.attempts} + 1` })
+    .where(eq(verificationCodes.id, id));
+}
+
+export async function deleteVerificationCode(id: string) {
+  await db.delete(verificationCodes).where(eq(verificationCodes.id, id));
 }
 
 // Templates (spec: "Save Recurring Template", "Session-Scoped Template

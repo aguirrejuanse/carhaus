@@ -224,6 +224,20 @@ export const notifications = pgTable("notifications", {
     .defaultNow(),
 });
 
+/** One active code per email — requesting a new one deletes the previous
+ *  (see db/queries.ts). Codes are stored HMAC-hashed, expire in 10 min,
+ *  and allow max 5 verify attempts. */
+export const verificationCodes = pgTable("verification_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export interface TemplateLeg {
   sequence: 1 | 2;
   origin: string;

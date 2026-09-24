@@ -12,7 +12,6 @@ import {
 } from "@/lib/services/booking";
 
 export interface CreateTripParams {
-  email: string;
   quoteToken?: string;
   legs: TripLegInput[];
   extras: TripExtrasInput;

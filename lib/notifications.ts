@@ -12,13 +12,13 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { Resend } from "resend";
 import {
   getPendingEmailNotification,
   getTripForAdmin,
   markNotificationFailed,
   markNotificationSent,
 } from "@/db/queries";
+import { sendEmail } from "./email";
 import { formatCents, formatLegDateTime } from "./format";
 import { SNACK_LABELS } from "./labels";
 import { getEnv } from "./env";
@@ -259,17 +259,12 @@ async function sendResolutionEmail(
   const status = EMAIL_STATUS[trip.status];
   if (!status) throw new Error(`No email template for status "${trip.status}"`);
 
-  const env = getEnv();
-  if (!env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-
   const logo = logoAttachment();
-  const logoSrc = logo ? "cid:logo" : `${env.APP_ORIGIN}/logo-header.png`;
+  const logoSrc = logo
+    ? "cid:logo"
+    : `${getEnv().APP_ORIGIN}/logo-header.png`;
 
-  const resend = new Resend(env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({
-    from: env.RESEND_FROM ?? "Carhaus <onboarding@resend.dev>",
+  await sendEmail({
     to,
     subject: status.subject,
     text: resolutionEmailText(trip),
@@ -278,10 +273,6 @@ async function sendResolutionEmail(
       ? [{ filename: "logo-header.png", content: logo, contentId: "logo" }]
       : undefined,
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
 
 /**

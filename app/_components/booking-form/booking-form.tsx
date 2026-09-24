@@ -13,14 +13,41 @@
 
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
+import { VerifyEmailForm } from "../verify-email-form";
 import { ExtrasFields } from "./extras-fields";
 import { LegFields } from "./leg-fields";
 import { PreviewPanel } from "./preview-panel";
 import { useBookingForm } from "./use-booking-form";
 import type { BookingInitial } from "./types";
 
-export function BookingForm({ initial }: { initial?: BookingInitial }) {
+interface Props {
+  initial?: BookingInitial;
+  /** Signed-in rider — locks the email field and skips verification. */
+  riderEmail?: string;
+}
+
+export function BookingForm({ initial, riderEmail }: Props) {
   const form = useBookingForm(initial);
+
+  if (form.needsVerification && form.verificationEmail) {
+    return (
+      <div className="flex w-full flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">
+            Confirmá tu email
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Te mandamos un código para verificar que el email es tuyo. Tu
+            solicitud se envía en cuanto lo ingreses.
+          </p>
+        </div>
+        <VerifyEmailForm
+          email={form.verificationEmail}
+          onVerified={form.retryBooking}
+        />
+      </div>
+    );
+  }
 
   return (
     <form ref={form.formRef} onSubmit={form.onSubmit} className="w-full">
@@ -28,6 +55,7 @@ export function BookingForm({ initial }: { initial?: BookingInitial }) {
         <LegFields
           fields={form.fields}
           initial={initial}
+          riderEmail={riderEmail}
           roundTrip={form.roundTrip}
           onRoundTripChange={form.setRoundTrip}
           onLegChange={form.bumpLegs}

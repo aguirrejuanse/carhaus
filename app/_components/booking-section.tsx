@@ -15,8 +15,10 @@ import { BookingForm, type BookingInitial } from "./booking-form";
 
 export function BookingSection({
   initialTemplates,
+  riderEmail,
 }: {
   initialTemplates: TemplateItem[];
+  riderEmail?: string;
 }) {
   // Server-fetched templates seed the query cache; a save from the
   // confirmation page invalidates this and the list refreshes on its own.
@@ -70,7 +72,7 @@ export function BookingSection({
         </section>
       )}
 
-      <BookingForm key={formKey} initial={initial} />
+      <BookingForm key={formKey} initial={initial} riderEmail={riderEmail} />
     </div>
   );
 }

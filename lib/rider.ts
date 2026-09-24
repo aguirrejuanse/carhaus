@@ -1,9 +1,9 @@
 /**
- * Rider session cookie (design decision #7: "Rider identity"). On a
- * successful `POST /api/trips` the server sets an HttpOnly signed cookie
- * `carhaus_rider` carrying the rider's `userId` for 30 days — this is the
- * "active booking session" that `GET /api/templates` scopes template
- * listing to. No password or login exists for riders in the MVP.
+ * Rider session cookie (design decision #7: "Rider identity"). Issued by
+ * `POST /api/auth/verify` once the rider proves email ownership via OTP —
+ * an HttpOnly signed `carhaus_rider` cookie carrying the rider's `userId`
+ * for 30 days. `POST /api/trips` and the templates endpoints scope to it.
+ * No password exists for riders.
  *
  * Signed with `jose` HS256 like the admin session (`lib/auth.ts`), keyed
  * by `JWT_SECRET`.
