@@ -6,6 +6,8 @@ import {
   cars,
   drivers,
   NOTIFICATION_CHANNEL,
+  NOTIFICATION_STATUS,
+  notifications,
   pricingRules,
   TRIP_STATUS,
   TRIP_TYPE,
@@ -281,23 +283,67 @@ export async function approveTrip(input: {
 }
 
 /**
- * Rejects a pending trip (spec: "Reject Trip" — no notification row is
- * created). Conditional update, same race-kill as `approveTrip`.
+ * Rejects a pending trip (spec: "Reject Trip"). Same atomic CTE as
+ * `approveTrip`: the conditional UPDATE races-kills double-resolution and
+ * the notification row is inserted FROM `upd` — dispatched afterwards.
  */
-export async function rejectTrip(input: { tripId: string; reason?: string }) {
-  const [updated] = await db
-    .update(trips)
-    .set({
-      status: TRIP_STATUS.REJECTED,
-      rejectionReason: input.reason ?? null,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(eq(trips.id, input.tripId), eq(trips.status, TRIP_STATUS.PENDING)),
+export async function rejectTrip(input: {
+  tripId: string;
+  reason?: string;
+  riderEmail: string;
+}) {
+  const result = await db.execute(sql`
+    WITH upd AS (
+      UPDATE trips
+      SET status = ${TRIP_STATUS.REJECTED},
+          rejection_reason = ${input.reason ?? null},
+          updated_at = now()
+      WHERE id = ${input.tripId}::uuid AND status = ${TRIP_STATUS.PENDING}
+      RETURNING *
+    ), ins AS (
+      INSERT INTO notifications (trip_id, channel, recipient)
+      SELECT id, ${NOTIFICATION_CHANNEL.EMAIL}, ${input.riderEmail}
+      FROM upd
     )
-    .returning();
+    SELECT * FROM upd
+  `);
 
-  return updated ?? null;
+  return (result.rows[0] ?? null) as Record<string, unknown> | null;
+}
+
+// Notifications — dispatched outside the approval transaction (design
+// "Data Flow"): `approveTrip` queues the row; `dispatchApprovalNotification`
+// sends and marks the outcome here.
+
+/** Latest pending email notification for a trip — what approveTrip queues. */
+export async function getPendingEmailNotification(tripId: string) {
+  const [row] = await db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.tripId, tripId),
+        eq(notifications.channel, NOTIFICATION_CHANNEL.EMAIL),
+        eq(notifications.status, NOTIFICATION_STATUS.PENDING),
+      ),
+    )
+    .orderBy(desc(notifications.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function markNotificationSent(id: string) {
+  await db
+    .update(notifications)
+    .set({ status: NOTIFICATION_STATUS.SENT, sentAt: new Date() })
+    .where(eq(notifications.id, id));
+}
+
+export async function markNotificationFailed(id: string, message: string) {
+  await db
+    .update(notifications)
+    .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
+    .where(eq(notifications.id, id));
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
@@ -309,6 +355,8 @@ export async function getTripByPublicToken(token: string) {
       legs: { orderBy: (leg, { asc: ascOrder }) => ascOrder(leg.sequence) },
       extras: true,
       user: { columns: { email: true } },
+      assignedCar: { columns: { make: true, model: true, plate: true } },
+      assignedDriver: { columns: { name: true, phone: true } },
     },
   });
 }

@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "DOTENV_CONFIG_PATH=.env.local drizzle-kit migrate",
     "db:seed": "DOTENV_CONFIG_PATH=.env.local tsx db/seed.ts",
-    "db:seed:demo": "DOTENV_CONFIG_PATH=.env.local tsx db/seed-demo.ts"
+    "db:seed:demo": "DOTENV_CONFIG_PATH=.env.local tsx db/seed-demo.ts",
+    "db:studio": "DOTENV_CONFIG_PATH=.env.local drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
