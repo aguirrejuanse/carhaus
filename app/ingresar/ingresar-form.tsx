@@ -3,19 +3,16 @@
 /** Standalone rider login — OTP for a returning rider; on success the
  *  session is set and we land on their trips. */
 
-import { useRouter } from "next/navigation";
 import { VerifyEmailForm } from "@/app/_components/verify-email-form";
 
 export function IngresarForm() {
-  const router = useRouter();
-  // refresh() before push — the server-component header would otherwise
-  // keep the pre-login "Ingresar" link from the cached layout.
+  // Full reload on purpose: the AppHeader lives in the shared root layout
+  // and client-side navigation can serve its pre-login render from the
+  // Router Cache (refresh()+push() races against it — verified broken).
+  // Same precedent as LogoutButton's window.location.href.
   return (
     <VerifyEmailForm
-      onVerified={() => {
-        router.refresh();
-        router.push("/viajes");
-      }}
+      onVerified={() => window.location.assign("/viajes")}
     />
   );
 }
