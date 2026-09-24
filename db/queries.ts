@@ -224,13 +224,18 @@ export async function getDrivers() {
 
 /**
  * Approves a pending trip with a car/driver assignment (spec: "Approve
- * with Assignment"). Runs as one neon-http batch transaction (design
+ * with Assignment"). One atomic statement (a data-modifying CTE — design
  * decision #9): the conditional `UPDATE ... WHERE status='pending'` kills
- * double-approval races, and the notification row is queued via a guarded
- * `INSERT ... SELECT` that only produces a row while the trip reads
- * `approved` inside the same transaction. Returns the updated trip, or
- * `null` when the trip wasn't pending (caller maps to `409
- * trip_not_pending`).
+ * double-approval races, and the notification row is inserted FROM the
+ * update's own RETURNING rows, so it only exists when this call actually
+ * flipped the trip to approved (an already-approved trip produces zero
+ * `upd` rows → zero notifications). Returns the updated row, or `null`
+ * when the trip wasn't pending (caller maps to `409 trip_not_pending`).
+ *
+ * Raw `sql` because neon-http has no interactive transactions and
+ * drizzle's typed `insert().select()` requires selecting the table's
+ * full column list — the CTE expresses the same atomicity in a single
+ * statement.
  */
 export async function approveTrip(input: {
   tripId: string;
@@ -238,38 +243,24 @@ export async function approveTrip(input: {
   driverId: string;
   riderEmail: string;
 }) {
-  const [updated] = await db.batch([
-    db
-      .update(trips)
-      .set({
-        status: TRIP_STATUS.APPROVED,
-        assignedCarId: input.carId,
-        assignedDriverId: input.driverId,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(eq(trips.id, input.tripId), eq(trips.status, TRIP_STATUS.PENDING)),
-      )
-      .returning(),
-    db.insert(notifications).select(
-      db
-        .select({
-          tripId: sql<string>`${input.tripId}::uuid`.as("trip_id"),
-          channel: sql<string>`${NOTIFICATION_CHANNEL.EMAIL}`.as("channel"),
-          recipient: sql<string>`${input.riderEmail}`.as("recipient"),
-        })
-        .from(trips)
-        .where(
-          and(
-            eq(trips.id, input.tripId),
-            eq(trips.status, TRIP_STATUS.APPROVED),
-          ),
-        )
-        .limit(1),
-    ),
-  ]);
+  const result = await db.execute(sql`
+    WITH upd AS (
+      UPDATE trips
+      SET status = ${TRIP_STATUS.APPROVED},
+          assigned_car_id = ${input.carId}::uuid,
+          assigned_driver_id = ${input.driverId}::uuid,
+          updated_at = now()
+      WHERE id = ${input.tripId}::uuid AND status = ${TRIP_STATUS.PENDING}
+      RETURNING *
+    ), ins AS (
+      INSERT INTO notifications (trip_id, channel, recipient)
+      SELECT id, ${NOTIFICATION_CHANNEL.EMAIL}, ${input.riderEmail}
+      FROM upd
+    )
+    SELECT * FROM upd
+  `);
 
-  return updated[0] ?? null;
+  return (result.rows[0] ?? null) as Record<string, unknown> | null;
 }
 
 /**
