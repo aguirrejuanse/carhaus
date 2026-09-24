@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   pricingRules,
@@ -131,6 +131,40 @@ export async function createTripBooking(input: {
     throw new ApiError(500, "trip_insert_failed", "Trip was not persisted");
   }
   return { id: tripId, publicToken: trip.publicToken };
+}
+
+/** Rider-session lookup: the `carhaus_rider` JWT carries only `userId`. */
+export async function getUserById(id: string) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user ?? null;
+}
+
+/**
+ * Rider's own trips for the confirmation page ("Tus viajes") — latest
+ * first, joined to leg 1 so each row can show origin → destination.
+ */
+export async function getTripsByUserId(userId: string) {
+  return await db
+    .select({
+      publicToken: trips.publicToken,
+      status: trips.status,
+      createdAt: trips.createdAt,
+      totalPriceCents: trips.totalPriceCents,
+      origin: tripLegs.origin,
+      destination: tripLegs.destination,
+    })
+    .from(trips)
+    .leftJoin(
+      tripLegs,
+      and(eq(tripLegs.tripId, trips.id), eq(tripLegs.sequence, 1)),
+    )
+    .where(eq(trips.userId, userId))
+    .orderBy(desc(trips.createdAt))
+    .limit(10);
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
