@@ -30,6 +30,13 @@ export async function signRiderSession(userId: string): Promise<string> {
     .sign(getSigningKey());
 }
 
+/** `Set-Cookie` header value for the signed rider session. */
+export function riderSessionCookie(token: string): string {
+  return `${RIDER_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${RIDER_SESSION_TTL_SECONDS}${
+    process.env.NODE_ENV === "production" ? "; Secure" : ""
+  }`;
+}
+
 /**
  * Returns the rider's `userId` for a valid cookie value, or `null` for any
  * absent/expired/tampered/malformed token. Not finding a session is a
