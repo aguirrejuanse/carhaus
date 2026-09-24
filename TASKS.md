@@ -12,7 +12,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | ✅ merged |
 | 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | done |
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | open |
-| 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | pending |
+| 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | open |
 | 6 | Admin login (Ph.7) | PR6 | PR3 | pending |
 | 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | pending |
 | 8 | Notifications (Ph.9) | PR8 | PR7 | pending |
@@ -48,11 +48,11 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 5.2 Integration test: 200 quote, 502 on provider failure
 
 ## Phase 6: Booking Flow
-- [ ] 6.1 `app/api/trips/route.ts` POST — verify quote, upsert user by email, batch tx trips+trip_legs+trip_extras, set `carhaus_rider` cookie, publicToken (spec: Rider Trip Request, Email-Keyed Identity, Trip Extras)
-- [ ] 6.2 `app/_components/booking-form.tsx` — useActionState+apiFetch, debounced preview, 1/2-leg toggle
-- [ ] 6.3 `app/page.tsx` wiring
-- [ ] 6.4 `app/trips/[token]/page.tsx` confirmation page
-- [ ] 6.5 Integration test: 201 create, 409 bad/expired quote
+- [x] 6.1 `app/api/trips/route.ts` POST — verify quote, upsert user by email, batch tx trips+trip_legs+trip_extras, set `carhaus_rider` cookie, publicToken (spec: Rider Trip Request, Email-Keyed Identity, Trip Extras)
+- [x] 6.2 `app/_components/booking-form.tsx` — useActionState+apiFetch, debounced preview, 1/2-leg toggle
+- [x] 6.3 `app/page.tsx` wiring
+- [x] 6.4 `app/trips/[token]/page.tsx` confirmation page
+- [x] 6.5 Integration test: 201 create, 409 bad/expired quote
 
 ## Phase 7: Admin Login
 - [ ] 7.1 `app/api/admin/login/route.ts` POST bcrypt+jose+HttpOnly cookie
