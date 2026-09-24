@@ -41,6 +41,7 @@ export function ExtrasFields({ fields, snackChoice, onSnackChange }: Props) {
         <Field>
           <FieldLabel>Snack</FieldLabel>
           <Select
+            items={SNACK_OPTIONS}
             value={snackChoice}
             onValueChange={(value) => onSnackChange(value ?? "none")}
           >
