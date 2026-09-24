@@ -26,9 +26,18 @@ export interface QuoteLeg {
   priceCents: number;
 }
 
+export interface ResolvedAddress {
+  origin: string;
+  destination: string;
+}
+
 export interface PricePreview {
   token: string;
   quote: { legs: QuoteLeg[]; totalPriceCents: number };
+  /** Addresses as the distance provider resolved them — display only. */
+  resolved: ResolvedAddress[];
+  /** Signed proxy URL rendering a static map of the first leg. */
+  mapUrl: string;
 }
 
 export function requestPricePreview(
