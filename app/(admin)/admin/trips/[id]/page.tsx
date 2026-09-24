@@ -5,6 +5,8 @@
  * `useAdminTripMutation` + `router.refresh()` (design "Client Convention").
  */
 
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getActiveCars, getDrivers, getTripForAdmin } from "@/db/queries";
 import { formatCents } from "@/lib/format";
@@ -32,6 +34,13 @@ export default async function AdminTripPage({
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-16">
       <header className="flex flex-col gap-2">
+        <Link
+          href="/admin"
+          className="flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+        >
+          <ArrowLeft size={14} />
+          Viajes
+        </Link>
         <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
           {TRIP_STATUS_LABELS[trip.status] ?? trip.status}
         </p>
