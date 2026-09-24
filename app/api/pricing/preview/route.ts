@@ -17,7 +17,12 @@ import {
 } from "@/lib/distance";
 import { getEnv } from "@/lib/env";
 import { priceTrip } from "@/lib/pricing";
-import { createQuoteExpiry, signQuote, type QuotePayload } from "@/lib/quote";
+import {
+  createQuoteExpiry,
+  signMapParams,
+  signQuote,
+  type QuotePayload,
+} from "@/lib/quote";
 
 const previewSchema = z.object({
   // Exactly 1 or 2 fixed legs (ida/vuelta) per MVP scope decision.
@@ -34,8 +39,12 @@ export const POST = mutationRoute({
     try {
       const legs = await Promise.all(
         input.legs.map(async (leg, index) => {
-          const { distanceMeters, durationSeconds } =
-            await provider.getDistance(leg.origin, leg.destination);
+          const {
+            distanceMeters,
+            durationSeconds,
+            resolvedOrigin,
+            resolvedDestination,
+          } = await provider.getDistance(leg.origin, leg.destination);
           return {
             sequence: (index + 1) as 1 | 2,
             origin: leg.origin,
@@ -43,6 +52,8 @@ export const POST = mutationRoute({
             scheduledAt: leg.scheduledAt,
             distanceMeters,
             durationSeconds,
+            resolvedOrigin,
+            resolvedDestination,
           };
         }),
       );
@@ -65,7 +76,25 @@ export const POST = mutationRoute({
         exp: createQuoteExpiry(),
       };
 
-      return jsonSuccess({ quote, token: signQuote(quote, env.QUOTE_SECRET) });
+      // Display-only data (not part of the signed booking contract): the
+      // addresses Google resolved + a signed static-map URL so the rider
+      // can confirm the provider picked the right places.
+      const resolved = legs.map((leg) => ({
+        origin: leg.resolvedOrigin,
+        destination: leg.resolvedDestination,
+      }));
+      const first = legs[0];
+      const mapUrl =
+        `/api/map/static?o=${encodeURIComponent(first.resolvedOrigin)}` +
+        `&d=${encodeURIComponent(first.resolvedDestination)}` +
+        `&sig=${signMapParams(first.resolvedOrigin, first.resolvedDestination, env.QUOTE_SECRET)}`;
+
+      return jsonSuccess({
+        quote,
+        token: signQuote(quote, env.QUOTE_SECRET),
+        resolved,
+        mapUrl,
+      });
     } catch (error) {
       if (error instanceof DistanceProviderError) {
         // Spec: "Distance Provider Failure Handling" — a provider outage
