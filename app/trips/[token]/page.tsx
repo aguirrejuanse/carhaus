@@ -5,9 +5,13 @@
  * pending ones either.
  */
 
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTripByPublicToken } from "@/db/queries";
 import { whatsAppLinkForTrip } from "@/lib/notifications";
+import { AppHeader } from "@/app/_components/app-header";
+import { RiderTrips } from "@/app/_components/rider-trips";
+import { Button } from "@/components/ui/button";
 import { ConfirmationHeader } from "./confirmation-header";
 import { TripSummary } from "./trip-summary";
 
@@ -26,7 +30,8 @@ export default async function TripConfirmationPage({
     trip.status === "approved" ? whatsAppLinkForTrip(trip) : null;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-16 sm:py-24">
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-10 sm:py-14">
+      <AppHeader />
       <ConfirmationHeader status={trip.status} email={trip.user.email} />
       <hr className="border-border" />
       <TripSummary
@@ -44,6 +49,15 @@ export default async function TripConfirmationPage({
           Coordinar por WhatsApp{trip.assignedDriver && ` con ${trip.assignedDriver.name}`}
         </a>
       )}
+      <Button
+        render={<Link href="/" />}
+        variant="outline"
+        className="w-fit"
+      >
+        Pedir otro viaje
+      </Button>
+      <hr className="border-border" />
+      <RiderTrips />
     </main>
   );
 }
