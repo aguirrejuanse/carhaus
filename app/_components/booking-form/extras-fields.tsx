@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SNACK_LABELS } from "@/lib/labels";
-import type { FieldErrors } from "./types";
+import type { BookingInitial, FieldErrors } from "./types";
 
 const SNACK_OPTIONS = Object.entries(SNACK_LABELS).map(([value, label]) => ({
   value,
@@ -27,11 +27,17 @@ const SNACK_OPTIONS = Object.entries(SNACK_LABELS).map(([value, label]) => ({
 
 interface Props {
   fields: FieldErrors;
+  initial?: BookingInitial;
   snackChoice: string;
   onSnackChange: (value: string) => void;
 }
 
-export function ExtrasFields({ fields, snackChoice, onSnackChange }: Props) {
+export function ExtrasFields({
+  fields,
+  initial,
+  snackChoice,
+  onSnackChange,
+}: Props) {
   return (
     <FieldSet>
       <FieldLegend className="font-heading text-lg font-semibold tracking-tight">
@@ -68,6 +74,7 @@ export function ExtrasFields({ fields, snackChoice, onSnackChange }: Props) {
             min={16}
             max={30}
             placeholder="22"
+            defaultValue={initial?.acTemperatureCelsius}
           />
         </Field>
       </div>
@@ -80,6 +87,7 @@ export function ExtrasFields({ fields, snackChoice, onSnackChange }: Props) {
           name="spotifyPlaylistUrl"
           type="url"
           placeholder="https://open.spotify.com/playlist/..."
+          defaultValue={initial?.spotifyPlaylistUrl}
         />
         <FieldError>{fields?.["extras.spotifyPlaylistUrl"]?.[0]}</FieldError>
       </Field>

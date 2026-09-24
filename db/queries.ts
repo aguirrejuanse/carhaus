@@ -13,9 +13,11 @@ import {
   TRIP_TYPE,
   tripExtras,
   tripLegs,
+  tripTemplates,
   trips,
   users,
   type SnackChoice,
+  type TemplateLeg,
   type TripStatus,
   type TripType,
 } from "@/db/schema";
@@ -344,6 +346,33 @@ export async function markNotificationFailed(id: string, message: string) {
     .update(notifications)
     .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
     .where(eq(notifications.id, id));
+}
+
+// Templates (spec: "Save Recurring Template", "Session-Scoped Template
+// Listing") — scoped by rider email, resolved from the session cookie.
+
+export async function listTemplatesByRiderEmail(riderEmail: string) {
+  return await db
+    .select()
+    .from(tripTemplates)
+    .where(eq(tripTemplates.riderEmail, riderEmail))
+    .orderBy(desc(tripTemplates.createdAt));
+}
+
+export async function createTemplate(input: {
+  riderEmail: string;
+  name: string;
+  tripType: TripType;
+  legs: TemplateLeg[];
+  snackChoice: SnackChoice;
+  spotifyPlaylistUrl?: string;
+  acTemperatureCelsius?: number;
+}) {
+  const [template] = await db
+    .insert(tripTemplates)
+    .values(input)
+    .returning();
+  return template;
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */

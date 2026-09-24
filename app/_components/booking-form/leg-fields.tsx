@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toDateTimeInputValue } from "@/lib/format";
 import { PlaceInput } from "./place-input";
-import type { FieldErrors } from "./types";
+import type { BookingInitial, FieldErrors } from "./types";
 
 const TRIP_MODE_OPTIONS = [
   { value: false, label: "Solo ida" },
@@ -24,6 +24,7 @@ const TRIP_MODE_OPTIONS = [
 
 interface Props {
   fields: FieldErrors;
+  initial?: BookingInitial;
   roundTrip: boolean;
   onRoundTripChange: (value: boolean) => void;
   onLegChange: () => void;
@@ -31,6 +32,7 @@ interface Props {
 
 export function LegFields({
   fields,
+  initial,
   roundTrip,
   onRoundTripChange,
   onLegChange,
@@ -66,6 +68,7 @@ export function LegFields({
             id="origin"
             name="origin"
             placeholder="Ej. Guaymallén"
+            defaultValue={initial?.origin}
             onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.origin"]?.[0]}</FieldError>
@@ -76,6 +79,7 @@ export function LegFields({
             id="destination"
             name="destination"
             placeholder="Ej. Plaza Shopping"
+            defaultValue={initial?.destination}
             onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.destination"]?.[0]}</FieldError>
