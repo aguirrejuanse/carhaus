@@ -54,12 +54,13 @@ Drizzle ORM + Neon Postgres, Zod 4, Vitest, jose, Resend, pnpm.
 
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`); no AI
   attribution, no `Co-Authored-By`.
-- PRs follow `.claude/skills/pr/SKILL.md`: stacked-to-main — every PR
-  targets `main`, merged in numeric order. Body template: Task / Overview /
-  Visual Doc / Tests / Non-code changes.
+- PRs follow `.claude/skills/pr/SKILL.md`. For the MVP chain the user chose
+  branch-to-branch chaining — each PR targets the previous PR's branch and
+  merges in numeric order. Body template: Task / Overview / Visual Doc /
+  Tests / Non-code changes.
 - `TASKS.md` is the task tracker — tick items in the same push as the work.
   No GitHub Issues or project board.
-- Never commit `.env.local`, `.atl/`, `logo.jpg`, `.vercel/`.
+- Never commit `.env.local`, `.atl/`, `.vercel/`.
 
 ## Deployment (Vercel)
 
