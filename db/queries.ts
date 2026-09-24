@@ -6,6 +6,8 @@ import {
   cars,
   drivers,
   NOTIFICATION_CHANNEL,
+  NOTIFICATION_STATUS,
+  notifications,
   pricingRules,
   TRIP_STATUS,
   TRIP_TYPE,
@@ -300,6 +302,41 @@ export async function rejectTrip(input: { tripId: string; reason?: string }) {
   return updated ?? null;
 }
 
+// Notifications — dispatched outside the approval transaction (design
+// "Data Flow"): `approveTrip` queues the row; `dispatchApprovalNotification`
+// sends and marks the outcome here.
+
+/** Latest pending email notification for a trip — what approveTrip queues. */
+export async function getPendingEmailNotification(tripId: string) {
+  const [row] = await db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.tripId, tripId),
+        eq(notifications.channel, NOTIFICATION_CHANNEL.EMAIL),
+        eq(notifications.status, NOTIFICATION_STATUS.PENDING),
+      ),
+    )
+    .orderBy(desc(notifications.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function markNotificationSent(id: string) {
+  await db
+    .update(notifications)
+    .set({ status: NOTIFICATION_STATUS.SENT, sentAt: new Date() })
+    .where(eq(notifications.id, id));
+}
+
+export async function markNotificationFailed(id: string, message: string) {
+  await db
+    .update(notifications)
+    .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
+    .where(eq(notifications.id, id));
+}
+
 /** Public confirmation page lookup (design decision #8: unguessable link). */
 export async function getTripByPublicToken(token: string) {
   if (!token) return undefined;
@@ -309,6 +346,8 @@ export async function getTripByPublicToken(token: string) {
       legs: { orderBy: (leg, { asc: ascOrder }) => ascOrder(leg.sequence) },
       extras: true,
       user: { columns: { email: true } },
+      assignedCar: { columns: { make: true, model: true, plate: true } },
+      assignedDriver: { columns: { name: true, phone: true } },
     },
   });
 }

@@ -16,6 +16,7 @@ import { z } from "zod";
 import { approveTrip, getTripForAdmin, rejectTrip } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
+import { dispatchApprovalNotification } from "@/lib/notifications";
 
 const patchSchema = z.discriminatedUnion("action", [
   z.object({
@@ -60,6 +61,13 @@ export const PATCH = mutationRoute({
         "trip_not_pending",
         "Trip is not pending — it was already resolved",
       );
+    }
+
+    if (input.action === "approve") {
+      // After commit, outside the transaction (design "Data Flow"): an
+      // email can't be rolled back and a send failure must never void an
+      // approval. Awaited so the serverless function doesn't freeze mid-send.
+      await dispatchApprovalNotification(id);
     }
 
     return jsonSuccess({ trip: updated });

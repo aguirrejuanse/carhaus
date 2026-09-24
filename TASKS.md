@@ -14,8 +14,8 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | ✅ merged |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | ✅ merged |
 | 6 | Admin login (Ph.7) | PR6 | PR3 | ✅ merged |
-| 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | open |
-| 8 | Notifications (Ph.9) | PR8 | PR7 | pending |
+| 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | ✅ merged |
+| 8 | Notifications (Ph.9) | PR8 | PR7 | open |
 | 9 | Templates (Ph.10) | PR9 | PR5 | pending |
 
 ## Phase 1: Scaffold + Tooling
@@ -66,9 +66,9 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 8.4 Integration test: 200, 401, 409 double-approve
 
 ## Phase 9: Notifications
-- [ ] 9.1 `lib/notifications.ts` buildWhatsAppLink + Resend send; test link format, send success/fail
-- [ ] 9.2 Wire dispatch after PATCH commit outside tx, mark sent/failed (spec: Approval Email)
-- [ ] 9.3 Surface wa.me link in confirmation + admin UI (spec: WhatsApp Deep Link)
+- [x] 9.1 `lib/notifications.ts` buildWhatsAppLink + Resend send; test link format, send success/fail
+- [x] 9.2 Wire dispatch after PATCH commit outside tx, mark sent/failed (spec: Approval Email)
+- [x] 9.3 Surface wa.me link in confirmation + admin UI (spec: WhatsApp Deep Link)
 
 ## Phase 10: Templates
 - [ ] 10.1 `app/api/templates/route.ts` POST+GET, rider-cookie auth (spec: Save Recurring Template, Session-Scoped Template Listing)

@@ -6,6 +6,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   QUOTE_SECRET: z.string().min(32),
   GOOGLE_MAPS_API_KEY: z.string().min(1),
+  // Optional — notification dispatch degrades gracefully without them
+  // (email send marks the row `failed`, wa.me link just isn't rendered).
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_FROM: z.string().min(1).optional(),
+  OPERATOR_WHATSAPP_NUMBER: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -31,6 +36,9 @@ export function getEnv(): Env {
     JWT_SECRET: process.env.JWT_SECRET,
     QUOTE_SECRET: process.env.QUOTE_SECRET,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM: process.env.RESEND_FROM,
+    OPERATOR_WHATSAPP_NUMBER: process.env.OPERATOR_WHATSAPP_NUMBER,
   });
 
   if (!parsed.success) {
