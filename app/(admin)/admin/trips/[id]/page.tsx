@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getActiveCars, getDrivers, getTripForAdmin } from "@/db/queries";
 import { formatCents } from "@/lib/format";
-import { TRIP_STATUS_LABELS } from "@/lib/labels";
+import { TripStatusBadge } from "@/app/_components/trip-status-badge";
 import { ExtrasChips } from "./extras-chips";
 import { LegCard } from "./leg-card";
 import { StatusNote } from "./status-note";
@@ -41,9 +41,7 @@ export default async function AdminTripPage({
           <ArrowLeft size={14} />
           Viajes
         </Link>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          {TRIP_STATUS_LABELS[trip.status] ?? trip.status}
-        </p>
+        <TripStatusBadge status={trip.status} />
         <h1 className="font-heading text-4xl font-bold tracking-tight">
           {trip.user.email}
         </h1>

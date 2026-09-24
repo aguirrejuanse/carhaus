@@ -1,7 +1,9 @@
 /** Status header for the rider confirmation page — eyebrow, status
- *  headline, and a per-status explainer. */
+ *  headline (status-colored), and a per-status explainer. */
 
 import { TRIP_STATUS_LABELS } from "@/lib/labels";
+import { cn } from "cn";
+import { STATUS_TEXT_STYLES } from "@/app/_components/trip-status-badge";
 
 export function ConfirmationHeader({
   status,
@@ -15,7 +17,12 @@ export function ConfirmationHeader({
       <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
         Solicitud recibida
       </p>
-      <h1 className="font-heading text-5xl font-bold tracking-tight">
+      <h1
+        className={cn(
+          "font-heading text-5xl font-bold tracking-tight",
+          STATUS_TEXT_STYLES[status],
+        )}
+      >
         {TRIP_STATUS_LABELS[status] ?? status}
       </h1>
       <p className="max-w-md text-muted-foreground">
