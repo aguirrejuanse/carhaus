@@ -54,6 +54,7 @@ export async function AppHeader() {
       {!rider && !admin && (
         <Link
           href="/ingresar"
+          data-tour="login"
           className="text-sm font-medium transition-colors duration-200 hover:text-muted-foreground"
         >
           Ingresar

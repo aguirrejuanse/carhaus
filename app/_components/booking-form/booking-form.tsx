@@ -59,21 +59,27 @@ export function BookingForm({ initial, riderEmail }: Props) {
         className="w-full"
       >
         <FieldGroup>
-        <LegFields
-          fields={form.fields}
-          initial={initial}
-          riderEmail={riderEmail}
-          roundTrip={form.roundTrip}
-          onRoundTripChange={form.setRoundTrip}
-          onLegChange={form.bumpLegs}
-        />
-        <ExtrasFields
-          fields={form.fields}
-          initial={initial}
-          snackChoice={form.snackChoice}
-          onSnackChange={form.setSnackChoice}
-        />
-        <PreviewPanel preview={form.preview} status={form.previewStatus} />
+        <div data-tour="trip">
+          <LegFields
+            fields={form.fields}
+            initial={initial}
+            riderEmail={riderEmail}
+            roundTrip={form.roundTrip}
+            onRoundTripChange={form.setRoundTrip}
+            onLegChange={form.bumpLegs}
+          />
+        </div>
+        <div data-tour="extras">
+          <ExtrasFields
+            fields={form.fields}
+            initial={initial}
+            snackChoice={form.snackChoice}
+            onSnackChange={form.setSnackChoice}
+          />
+        </div>
+        <div data-tour="preview">
+          <PreviewPanel preview={form.preview} status={form.previewStatus} />
+        </div>
 
         {form.error && (
           <p role="alert" className="text-sm text-destructive">
@@ -81,13 +87,15 @@ export function BookingForm({ initial, riderEmail }: Props) {
           </p>
         )}
 
-        <Button
-          type="submit"
-          disabled={form.isPending}
-          className="w-full sm:w-auto"
-        >
-          {form.isPending ? "Enviando…" : "Pedir viaje"}
-        </Button>
+        <div data-tour="submit" className="w-fit">
+          <Button
+            type="submit"
+            disabled={form.isPending}
+            className="w-full sm:w-auto"
+          >
+            {form.isPending ? "Enviando…" : "Pedir viaje"}
+          </Button>
+        </div>
         </FieldGroup>
       </form>
     </div>
