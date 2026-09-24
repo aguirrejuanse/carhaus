@@ -10,11 +10,11 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 |---|---|---|---|---|
 | 1 | Scaffold + schema + seed (Ph.1-2) | PR1 | — | ✅ merged |
 | 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | ✅ merged |
-| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | done |
-| 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | open |
-| 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | open |
-| 6 | Admin login (Ph.7) | PR6 | PR3 | open |
-| 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | pending |
+| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | ✅ merged |
+| 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | ✅ merged |
+| 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | ✅ merged |
+| 6 | Admin login (Ph.7) | PR6 | PR3 | ✅ merged |
+| 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | open |
 | 8 | Notifications (Ph.9) | PR8 | PR7 | pending |
 | 9 | Templates (Ph.10) | PR9 | PR5 | pending |
 
@@ -60,10 +60,10 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 7.3 Integration test: 200 valid, 401 invalid creds
 
 ## Phase 8: Admin Approval
-- [ ] 8.1 `app/api/admin/trips/[id]/route.ts` PATCH — requireAdmin, conditional `UPDATE...WHERE status='pending'` batch tx, assign car/driver, insert notifications row (spec: Approve with Assignment, Reject Trip, Trip Immutability)
-- [ ] 8.2 `app/(admin)/admin/page.tsx` pending queue (spec: Admin Review Queue)
-- [ ] 8.3 `app/(admin)/admin/trips/[id]/` approve/reject UI, useTransition+router.refresh
-- [ ] 8.4 Integration test: 200, 401, 409 double-approve
+- [x] 8.1 `app/api/admin/trips/[id]/route.ts` PATCH — requireAdmin, conditional `UPDATE...WHERE status='pending'` batch tx, assign car/driver, insert notifications row (spec: Approve with Assignment, Reject Trip, Trip Immutability)
+- [x] 8.2 `app/(admin)/admin/page.tsx` pending queue (spec: Admin Review Queue)
+- [x] 8.3 `app/(admin)/admin/trips/[id]/` approve/reject UI, useMutation+router.refresh
+- [x] 8.4 Integration test: 200, 401, 409 double-approve
 
 ## Phase 9: Notifications
 - [ ] 9.1 `lib/notifications.ts` buildWhatsAppLink + Resend send; test link format, send success/fail

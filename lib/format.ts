@@ -24,6 +24,16 @@ export function formatLegDateTime(date: Date): string {
   return legDateFormatter.format(date);
 }
 
+const legDateLongFormatter = new Intl.DateTimeFormat("es-AR", {
+  dateStyle: "full",
+  timeStyle: "short",
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+
+export function formatLegDateLong(date: Date): string {
+  return legDateLongFormatter.format(date);
+}
+
 /** `datetime-local` input value in LOCAL time (YYYY-MM-DDTHH:mm) — used for
  *  `min`/`defaultValue` constraints on the booking date fields. */
 export function toDateTimeInputValue(date: Date): string {

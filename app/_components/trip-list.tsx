@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { formatCents, formatLegDateTime } from "@/lib/format";
-import { TRIP_STATUS_LABELS } from "@/lib/labels";
+import { TripStatusBadge } from "./trip-status-badge";
 import type { getTripsByUserId } from "@/db/queries";
 
 interface Props {
@@ -19,12 +19,14 @@ export function TripList({ trips }: Props) {
             href={`/trips/${trip.publicToken}`}
             className="flex items-center justify-between gap-4 rounded-lg border border-border p-3 text-sm transition-colors duration-200 hover:border-foreground/30"
           >
-            <span className="font-medium">
-              {trip.origin} → {trip.destination}
+            <span className="flex flex-col gap-1">
+              <span className="font-medium">
+                {trip.origin} → {trip.destination}
+              </span>
+              <TripStatusBadge status={trip.status} />
             </span>
             <span className="text-right text-xs text-muted-foreground">
-              {formatLegDateTime(trip.createdAt)} ·{" "}
-              {TRIP_STATUS_LABELS[trip.status] ?? trip.status}
+              {formatLegDateTime(trip.createdAt)}
               {trip.totalPriceCents > 0 &&
                 ` · ${formatCents(trip.totalPriceCents)}`}
             </span>

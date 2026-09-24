@@ -64,10 +64,19 @@ async function main() {
     ])
     .onConflictDoNothing({ target: cars.plate });
 
-  await db.insert(drivers).values([
-    { name: "Martín Pérez", phone: "+5491100000001" },
-    { name: "Lucía Gómez", phone: "+5491100000002" },
-  ]);
+  // Drivers have no natural unique key — only seed the initial fleet when
+  // the table is empty (re-runs must not duplicate rows).
+  const existingDrivers = await db
+    .select({ id: drivers.id })
+    .from(drivers)
+    .limit(1);
+
+  if (existingDrivers.length === 0) {
+    await db.insert(drivers).values([
+      { name: "Martín Pérez", phone: "+5491100000001" },
+      { name: "Lucía Gómez", phone: "+5491100000002" },
+    ]);
+  }
 
   console.log("Seed completed.");
 }

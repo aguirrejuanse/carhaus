@@ -26,7 +26,7 @@ export async function AppHeader() {
   return (
     <div className="flex items-center justify-between gap-4">
       <Link
-        href="/"
+        href={admin && !rider ? "/admin" : "/"}
         className="transition-opacity duration-200 hover:opacity-80"
       >
         <Image
