@@ -7,13 +7,13 @@ description: Use when the user runs /pr or asks to push the current branch and o
 
 ## Overview
 
-Push the current branch and open a PR against `main` using `gh`, following the chained/stacked-to-main delivery strategy this project uses (each PR targets `main`, not the previous PR's branch).
+Push the current branch and open a PR using `gh`, following the branch-to-branch chaining strategy this project uses (each PR targets the previous PR's branch so stacked diffs stay reviewable; only the first PR in a chain targets `main`).
 
 ## Flow
 
 1. **Check state before pushing.** Run `git status --short` and `git branch --show-current`. Confirm there are no unrelated uncommitted changes on the branch. Never force-push.
 2. **Push the branch**: `git push -u origin <branch>` (or plain `git push` if already tracking).
-3. **Create the PR** with `gh pr create --base main --head <branch>`, title short and descriptive (`PRn: <what it does>`), and body using the template below.
+3. **Create the PR** with `gh pr create --base <previous-pr-branch> --head <branch>` (or `--base main` for the first PR in a chain), title short and descriptive (`PRn: <what it does>`), and body using the template below.
 4. **Report the PR URL** to the user — do not merge unless explicitly asked.
 
 ## PR body template
@@ -40,7 +40,8 @@ Always end the PR body with the session attribution line from the system reminde
 
 ## Notes specific to this project
 
-- Delivery strategy: chained PRs, `stacked-to-main` — every PR's base is `main`, none target another PR's branch.
+- Delivery strategy: chained PRs, branch-to-branch — each PR's base is the previous PR's branch (first PR in the chain targets `main`). When the previous PR merges, GitHub retargets the next one to `main` automatically.
+- GitHub blocks `gh pr edit --base` on PRs it considers "part of a stack" — set the correct base at creation time, or fix it in the GitHub UI.
 - If `sdd-verify` ran for the change behind this PR, summarize its verdict (PASS/WARNINGS/CRITICAL count) in the PR body's Overview section.
-- Don't include unrelated untracked files (e.g. `.atl/`, `logo.jpg`) unless the PR is specifically about them.
+- Don't include unrelated untracked files (e.g. `.atl/`) unless the PR is specifically about them.
 - After the PR is created (or its body updated), tick off the corresponding items in `TASKS.md` on the branch and include that change in the same push — this is the project's task tracker, there is no GitHub Issues/Projects board.
