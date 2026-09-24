@@ -1,11 +1,10 @@
 import "server-only";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
   cars,
   drivers,
-  notifications,
   NOTIFICATION_CHANNEL,
   pricingRules,
   TRIP_STATUS,
@@ -15,6 +14,7 @@ import {
   trips,
   users,
   type SnackChoice,
+  type TripStatus,
   type TripType,
 } from "@/db/schema";
 import { ApiError } from "@/lib/api/errors";
@@ -187,17 +187,34 @@ export async function getAdminByEmail(email: string) {
 // Admin
 // -----------------------------------------------------------------------------
 
-/** Pending queue for the admin dashboard (spec: "Admin Review Queue"). */
-export async function getPendingTrips() {
+/**
+ * Admin dashboard list by status (spec: "Admin Review Queue"). Pending
+ * sorts oldest-first (FIFO review); resolved trips newest-first.
+ */
+export async function getTripsByStatus(status: TripStatus) {
   return await db.query.trips.findMany({
-    where: eq(trips.status, TRIP_STATUS.PENDING),
-    orderBy: asc(trips.createdAt),
+    where: eq(trips.status, status),
+    orderBy:
+      status === TRIP_STATUS.PENDING
+        ? asc(trips.createdAt)
+        : desc(trips.createdAt),
     with: {
       legs: { orderBy: (leg, { asc: ascOrder }) => ascOrder(leg.sequence) },
       extras: true,
       user: { columns: { email: true } },
     },
   });
+}
+
+/** Per-status counts for the admin queue tabs. */
+export async function getTripCountsByStatus() {
+  const rows = await db
+    .select({ status: trips.status, count: count() })
+    .from(trips)
+    .groupBy(trips.status);
+  return Object.fromEntries(rows.map((r) => [r.status, r.count])) as Partial<
+    Record<TripStatus, number>
+  >;
 }
 
 /** Full admin detail for one trip (queue → approve/reject screen). */
