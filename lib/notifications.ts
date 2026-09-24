@@ -23,6 +23,8 @@ import { getEnv } from "./env";
 
 /** Minimal trip shape the notification copy needs — keeps callers loose. */
 interface TripContactInfo {
+  status: string;
+  rejectionReason?: string | null;
   legs: Array<{
     sequence: number;
     origin: string;
@@ -69,20 +71,51 @@ export function whatsAppLinkForTrip(trip: TripContactInfo): string | null {
   return buildWhatsAppLink(phone, tripWhatsAppMessage(trip));
 }
 
-function approvalEmailText(trip: TripContactInfo): string {
-  const legs = trip.legs
+/** Per-status email identity — matches TripStatusBadge colors. A future
+ *  "completed" status slots in here (e.g. blue accent). */
+const EMAIL_STATUS: Record<
+  string,
+  { accent: string; eyebrow: string; title: string; subject: string }
+> = {
+  approved: {
+    accent: "#059669",
+    eyebrow: "Viaje confirmado",
+    title: "Tu viaje quedó confirmado",
+    subject: "Tu viaje Carhaus fue confirmado",
+  },
+  rejected: {
+    accent: "#dc2626",
+    eyebrow: "Viaje no disponible",
+    title: "No pudimos tomar este viaje",
+    subject: "No pudimos tomar tu viaje Carhaus",
+  },
+};
+
+function legSummary(trip: TripContactInfo): string {
+  return trip.legs
     .map(
       (leg) =>
         `${leg.sequence === 1 ? "Ida" : "Vuelta"}: ${leg.origin} → ${leg.destination} — ${formatLegDateTime(leg.scheduledAt)}`,
     )
     .join("\n");
-  const assignment =
-    trip.assignedCar && trip.assignedDriver
-      ? `Auto: ${trip.assignedCar.make} ${trip.assignedCar.model} (${trip.assignedCar.plate}) · Chofer: ${trip.assignedDriver.name}`
-      : "";
+}
+
+function resolutionEmailText(trip: TripContactInfo): string {
+  const status = EMAIL_STATUS[trip.status];
   const waLink = whatsAppLinkForTrip(trip);
-  const wa = waLink ? `\n\nCoordiná con tu chofer: ${waLink}` : "";
-  return `Tu viaje Carhaus fue confirmado.\n\n${legs}\n\nPrecio: ${formatCents(trip.totalPriceCents)}\n${assignment}${wa}`;
+
+  if (trip.status === "approved") {
+    const assignment =
+      trip.assignedCar && trip.assignedDriver
+        ? `Auto: ${trip.assignedCar.make} ${trip.assignedCar.model} (${trip.assignedCar.plate}) · Chofer: ${trip.assignedDriver.name}`
+        : "";
+    const wa = waLink ? `\n\nCoordiná con tu chofer: ${waLink}` : "";
+    return `${status.title}.\n\n${legSummary(trip)}\n\nPrecio: ${formatCents(trip.totalPriceCents)}\n${assignment}${wa}`;
+  }
+
+  const reason = trip.rejectionReason ? `\n\nMotivo: ${trip.rejectionReason}` : "";
+  const wa = waLink ? `\n\nConsultanos por alternativas: ${waLink}` : "";
+  return `${status.title}.\n\n${legSummary(trip)}${reason}${wa}\n\nGracias por viajar con nosotros.`;
 }
 
 /** Email-HTML escape — origins/destinations/URLs are free user input. */
@@ -101,26 +134,25 @@ function detailRow(label: string, value: string): string {
   </tr>`;
 }
 
-function approvalEmailHtml(trip: TripContactInfo): string {
-  const origin = getEnv().APP_ORIGIN;
-  const logoUrl = `${origin}/logo-header.png`;
-  const rows: string[] = [];
-
-  for (const leg of trip.legs) {
+function legRows(trip: TripContactInfo): string[] {
+  return trip.legs.flatMap((leg) => {
     const tag = leg.sequence === 1 ? "Ida" : "Vuelta";
-    rows.push(
-      detailRow(
-        `${tag} · Origen`,
-        esc(leg.origin),
-      ),
+    return [
+      detailRow(`${tag} · Origen`, esc(leg.origin)),
       detailRow(`${tag} · Destino`, esc(leg.destination)),
       detailRow(`${tag} · Fecha`, esc(formatLegDateTime(leg.scheduledAt))),
-    );
-  }
+    ];
+  });
+}
 
+function approvedRows(trip: TripContactInfo): string[] {
+  const rows = legRows(trip);
   if (trip.extras && trip.extras.snackChoice !== "none") {
     rows.push(
-      detailRow("Snacks", esc(SNACK_LABELS[trip.extras.snackChoice] ?? trip.extras.snackChoice)),
+      detailRow(
+        "Snacks",
+        esc(SNACK_LABELS[trip.extras.snackChoice] ?? trip.extras.snackChoice),
+      ),
     );
   }
   if (trip.extras?.spotifyPlaylistUrl) {
@@ -131,9 +163,7 @@ function approvalEmailHtml(trip: TripContactInfo): string {
       ),
     );
   }
-
   rows.push(detailRow("Precio", esc(formatCents(trip.totalPriceCents))));
-
   if (trip.assignedCar) {
     rows.push(
       detailRow(
@@ -145,11 +175,31 @@ function approvalEmailHtml(trip: TripContactInfo): string {
   if (trip.assignedDriver) {
     rows.push(detailRow("Chofer", esc(trip.assignedDriver.name)));
   }
+  return rows;
+}
+
+function rejectedRows(trip: TripContactInfo): string[] {
+  const rows = legRows(trip);
+  if (trip.rejectionReason) {
+    rows.push(detailRow("Motivo", esc(trip.rejectionReason)));
+  }
+  return rows;
+}
+
+function resolutionEmailHtml(trip: TripContactInfo): string {
+  const status = EMAIL_STATUS[trip.status];
+  const logoUrl = `${getEnv().APP_ORIGIN}/logo-header.png`;
+  const rows =
+    trip.status === "approved" ? approvedRows(trip) : rejectedRows(trip);
 
   const waLink = whatsAppLinkForTrip(trip);
+  const waLabel =
+    trip.status === "approved" && trip.assignedDriver
+      ? `Coordinar por WhatsApp con ${esc(trip.assignedDriver.name)}`
+      : "Consultanos por WhatsApp";
   const waButton = waLink
     ? `<tr><td align="center" style="padding:28px 0 8px">
-        <a href="${esc(waLink)}" style="display:inline-block;background:#F5C518;color:#1E1B4B;font-size:15px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px">Coordinar por WhatsApp${trip.assignedDriver ? ` con ${esc(trip.assignedDriver.name)}` : ""}</a>
+        <a href="${esc(waLink)}" style="display:inline-block;background:#F5C518;color:#1E1B4B;font-size:15px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px">${waLabel}</a>
       </td></tr>`
     : "";
 
@@ -162,8 +212,8 @@ function approvalEmailHtml(trip: TripContactInfo): string {
           <img src="${esc(logoUrl)}" alt="Carhaus" width="140" style="display:block;border:0" />
         </td></tr>
         <tr><td style="padding:32px 32px 8px">
-          <p style="margin:0 0 4px;color:#F5C518;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Viaje confirmado</p>
-          <h1 style="margin:0 0 24px;color:#1E1B4B;font-size:26px;font-weight:800">Tu viaje quedó confirmado</h1>
+          <p style="margin:0 0 4px;color:${status.accent};font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">${status.eyebrow}</p>
+          <h1 style="margin:0 0 24px;color:#1E1B4B;font-size:26px;font-weight:800">${status.title}</h1>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows.join("")}</table>
         </td></tr>
         ${waButton}
@@ -178,10 +228,13 @@ function approvalEmailHtml(trip: TripContactInfo): string {
 }
 
 /** Throws when Resend isn't configured or the send fails — callers catch. */
-async function sendApprovalEmail(
+async function sendResolutionEmail(
   trip: TripContactInfo,
   to: string,
 ): Promise<void> {
+  const status = EMAIL_STATUS[trip.status];
+  if (!status) throw new Error(`No email template for status "${trip.status}"`);
+
   const env = getEnv();
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is not configured");
@@ -191,9 +244,9 @@ async function sendApprovalEmail(
   const { error } = await resend.emails.send({
     from: env.RESEND_FROM ?? "Carhaus <onboarding@resend.dev>",
     to,
-    subject: "Tu viaje Carhaus fue confirmado",
-    text: approvalEmailText(trip),
-    html: approvalEmailHtml(trip),
+    subject: status.subject,
+    text: resolutionEmailText(trip),
+    html: resolutionEmailHtml(trip),
   });
 
   if (error) {
@@ -202,11 +255,12 @@ async function sendApprovalEmail(
 }
 
 /**
- * Sends the approval email queued by `approveTrip` and records the
- * outcome on the `notifications` row. Never throws — a notification
- * failure is data (`failed` + `errorMessage`), not a request error.
+ * Sends the email queued by `approveTrip`/`rejectTrip` and records the
+ * outcome on the `notifications` row; the template follows the trip's
+ * final status. Never throws — a notification failure is data (`failed`
+ * + `errorMessage`), not a request error.
  */
-export async function dispatchApprovalNotification(
+export async function dispatchTripNotification(
   tripId: string,
 ): Promise<void> {
   const notification = await getPendingEmailNotification(tripId);
@@ -214,8 +268,8 @@ export async function dispatchApprovalNotification(
 
   try {
     const trip = await getTripForAdmin(tripId);
-    if (!trip) throw new Error("Trip not found after approval");
-    await sendApprovalEmail(trip, notification.recipient);
+    if (!trip) throw new Error("Trip not found after resolution");
+    await sendResolutionEmail(trip, notification.recipient);
     await markNotificationSent(notification.id);
   } catch (error) {
     await markNotificationFailed(

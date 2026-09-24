@@ -16,7 +16,7 @@ import { z } from "zod";
 import { approveTrip, getTripForAdmin, rejectTrip } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
-import { dispatchApprovalNotification } from "@/lib/notifications";
+import { dispatchTripNotification } from "@/lib/notifications";
 
 const patchSchema = z.discriminatedUnion("action", [
   z.object({
@@ -53,7 +53,11 @@ export const PATCH = mutationRoute({
             driverId: input.driverId,
             riderEmail: trip.user.email,
           })
-        : await rejectTrip({ tripId: id, reason: input.reason });
+        : await rejectTrip({
+            tripId: id,
+            reason: input.reason,
+            riderEmail: trip.user.email,
+          });
 
     if (!updated) {
       throw new ApiError(
@@ -63,12 +67,10 @@ export const PATCH = mutationRoute({
       );
     }
 
-    if (input.action === "approve") {
-      // After commit, outside the transaction (design "Data Flow"): an
-      // email can't be rolled back and a send failure must never void an
-      // approval. Awaited so the serverless function doesn't freeze mid-send.
-      await dispatchApprovalNotification(id);
-    }
+    // After commit, outside the transaction (design "Data Flow"): an email
+    // can't be rolled back and a send failure must never void the
+    // resolution. Awaited so the serverless function doesn't freeze mid-send.
+    await dispatchTripNotification(id);
 
     return jsonSuccess({ trip: updated });
   },

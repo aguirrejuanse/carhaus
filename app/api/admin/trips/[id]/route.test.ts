@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { approveTrip, getTripForAdmin, rejectTrip } from "@/db/queries";
 import { signAdminSession } from "@/lib/auth";
-import { dispatchApprovalNotification } from "@/lib/notifications";
+import { dispatchTripNotification } from "@/lib/notifications";
 import { PATCH } from "./route";
 
 vi.mock("@/db/queries", () => ({
@@ -12,7 +12,7 @@ vi.mock("@/db/queries", () => ({
 }));
 
 vi.mock("@/lib/notifications", () => ({
-  dispatchApprovalNotification: vi.fn(async () => {}),
+  dispatchTripNotification: vi.fn(async () => {}),
 }));
 
 const APP_ORIGIN = "https://carhaus.example.com";
@@ -112,7 +112,7 @@ describe("PATCH /api/admin/trips/[id]", () => {
       driverId: DRIVER_ID,
       riderEmail: "rider@example.com",
     });
-    expect(dispatchApprovalNotification).toHaveBeenCalledWith(TRIP_ID);
+    expect(dispatchTripNotification).toHaveBeenCalledWith(TRIP_ID);
   });
 
   it("returns 200 and rejects with a reason", async () => {
@@ -125,10 +125,11 @@ describe("PATCH /api/admin/trips/[id]", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(dispatchApprovalNotification).not.toHaveBeenCalled();
+    expect(dispatchTripNotification).toHaveBeenCalledWith(TRIP_ID);
     expect(rejectTrip).toHaveBeenCalledWith({
       tripId: TRIP_ID,
       reason: "No cars available",
+      riderEmail: "rider@example.com",
     });
   });
 

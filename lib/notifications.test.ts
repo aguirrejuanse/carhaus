@@ -7,7 +7,7 @@ import {
 } from "@/db/queries";
 import {
   buildWhatsAppLink,
-  dispatchApprovalNotification,
+  dispatchTripNotification,
   tripWhatsAppMessage,
   whatsAppLinkForTrip,
 } from "./notifications";
@@ -55,6 +55,8 @@ const ENV_KEYS = [
 ] as const;
 
 const trip = {
+  status: "approved",
+  rejectionReason: null,
   totalPriceCents: 940000,
   legs: [
     {
@@ -98,7 +100,7 @@ describe("whatsAppLinkForTrip", () => {
   });
 });
 
-describe("dispatchApprovalNotification", () => {
+describe("dispatchTripNotification", () => {
   beforeEach(() => {
     setBaseEnv();
     process.env.RESEND_API_KEY = "test-resend-key";
@@ -116,7 +118,7 @@ describe("dispatchApprovalNotification", () => {
   });
 
   it("sends the approval email and marks the notification sent", async () => {
-    await dispatchApprovalNotification("trip-1");
+    await dispatchTripNotification("trip-1");
 
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -130,7 +132,7 @@ describe("dispatchApprovalNotification", () => {
   it("marks the notification failed when Resend rejects", async () => {
     sendMock.mockResolvedValue({ data: null, error: { message: "boom" } });
 
-    await dispatchApprovalNotification("trip-1");
+    await dispatchTripNotification("trip-1");
 
     expect(markNotificationFailed).toHaveBeenCalledWith("notif-1", "boom");
     expect(markNotificationSent).not.toHaveBeenCalled();
@@ -139,7 +141,7 @@ describe("dispatchApprovalNotification", () => {
   it("marks the notification failed when RESEND_API_KEY is missing", async () => {
     delete process.env.RESEND_API_KEY;
 
-    await dispatchApprovalNotification("trip-1");
+    await dispatchTripNotification("trip-1");
 
     expect(markNotificationFailed).toHaveBeenCalledWith(
       "notif-1",
@@ -147,10 +149,30 @@ describe("dispatchApprovalNotification", () => {
     );
   });
 
+  it("sends the rejection email when the trip was rejected", async () => {
+    vi.mocked(getTripForAdmin).mockResolvedValue({
+      ...trip,
+      status: "rejected",
+      rejectionReason: "Sin disponibilidad",
+      assignedDriver: null,
+      assignedCar: null,
+    } as never);
+
+    await dispatchTripNotification("trip-1");
+
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: expect.stringContaining("No pudimos tomar"),
+        html: expect.stringContaining("Sin disponibilidad"),
+      }),
+    );
+    expect(markNotificationSent).toHaveBeenCalledWith("notif-1");
+  });
+
   it("does nothing when no pending notification exists", async () => {
     vi.mocked(getPendingEmailNotification).mockResolvedValue(null as never);
 
-    await dispatchApprovalNotification("trip-1");
+    await dispatchTripNotification("trip-1");
 
     expect(sendMock).not.toHaveBeenCalled();
   });
