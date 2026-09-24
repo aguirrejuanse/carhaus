@@ -76,14 +76,7 @@ export function verifyQuote(token: string, secret: string): QuotePayload {
   }
   const [encodedPayload, signature] = parts;
 
-  const expectedSignature = computeSignature(encodedPayload, secret);
-
-  const providedSignatureBuffer = base64UrlDecode(signature);
-  const expectedSignatureBuffer = base64UrlDecode(expectedSignature);
-
-  const signatureValid =
-    providedSignatureBuffer.length === expectedSignatureBuffer.length &&
-    timingSafeEqual(providedSignatureBuffer, expectedSignatureBuffer);
+  const signatureValid = verifySignature(encodedPayload, signature, secret);
 
   if (!signatureValid) {
     throw new QuoteVerificationError("Invalid quote signature");
@@ -107,4 +100,42 @@ export function verifyQuote(token: string, secret: string): QuotePayload {
   }
 
   return payload;
+}
+
+function verifySignature(
+  payload: string,
+  signature: string,
+  secret: string,
+): boolean {
+  const providedSignatureBuffer = base64UrlDecode(signature);
+  const expectedSignatureBuffer = base64UrlDecode(
+    computeSignature(payload, secret),
+  );
+  return (
+    providedSignatureBuffer.length === expectedSignatureBuffer.length &&
+    timingSafeEqual(providedSignatureBuffer, expectedSignatureBuffer)
+  );
+}
+
+/**
+ * HMAC signature for the static-map proxy (`/api/map/static`). Signing the
+ * provider-resolved origin/destination means the proxy only renders maps
+ * for addresses we computed — it can't be abused as a free Static Maps
+ * endpoint with our key.
+ */
+export function signMapParams(
+  origin: string,
+  destination: string,
+  secret: string,
+): string {
+  return computeSignature(`${origin}\n${destination}`, secret);
+}
+
+export function verifyMapParams(
+  origin: string,
+  destination: string,
+  signature: string,
+  secret: string,
+): boolean {
+  return verifySignature(`${origin}\n${destination}`, signature, secret);
 }

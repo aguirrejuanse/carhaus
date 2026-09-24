@@ -10,28 +10,30 @@ import { z } from "zod";
 import { getActivePricingRules } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
+import { legSchema } from "@/lib/api/schemas";
 import {
   DistanceProviderError,
   GoogleDistanceProvider,
 } from "@/lib/distance";
 import { getEnv } from "@/lib/env";
 import { priceTrip } from "@/lib/pricing";
-import { createQuoteExpiry, signQuote, type QuotePayload } from "@/lib/quote";
+import {
+  createQuoteExpiry,
+  signMapParams,
+  signQuote,
+  type QuotePayload,
+} from "@/lib/quote";
 
 const previewSchema = z.object({
   // Exactly 1 or 2 fixed legs (ida/vuelta) per MVP scope decision.
-  legs: z
-    .array(
-      z.object({
-        origin: z.string().min(1),
-        destination: z.string().min(1),
-        /** ISO 8601 timestamp of when the leg departs. */
-        scheduledAt: z.iso.datetime(),
-      }),
-    )
-    .min(1)
-    .max(2),
+  legs: z.array(legSchema).min(1).max(2),
 });
+
+/** Distance Matrix accepts `place_id:` references — an exact place beats
+ *  re-geocoding free text when the rider picked an autocomplete option. */
+function distanceRef(text: string, placeId?: string): string {
+  return placeId ? `place_id:${placeId}` : text;
+}
 
 export const POST = mutationRoute({
   schema: previewSchema,
@@ -43,8 +45,15 @@ export const POST = mutationRoute({
     try {
       const legs = await Promise.all(
         input.legs.map(async (leg, index) => {
-          const { distanceMeters, durationSeconds } =
-            await provider.getDistance(leg.origin, leg.destination);
+          const {
+            distanceMeters,
+            durationSeconds,
+            resolvedOrigin,
+            resolvedDestination,
+          } = await provider.getDistance(
+            distanceRef(leg.origin, leg.originPlaceId),
+            distanceRef(leg.destination, leg.destinationPlaceId),
+          );
           return {
             sequence: (index + 1) as 1 | 2,
             origin: leg.origin,
@@ -52,6 +61,8 @@ export const POST = mutationRoute({
             scheduledAt: leg.scheduledAt,
             distanceMeters,
             durationSeconds,
+            resolvedOrigin,
+            resolvedDestination,
           };
         }),
       );
@@ -74,7 +85,25 @@ export const POST = mutationRoute({
         exp: createQuoteExpiry(),
       };
 
-      return jsonSuccess({ quote, token: signQuote(quote, env.QUOTE_SECRET) });
+      // Display-only data (not part of the signed booking contract): the
+      // addresses Google resolved + a signed static-map URL so the rider
+      // can confirm the provider picked the right places.
+      const resolved = legs.map((leg) => ({
+        origin: leg.resolvedOrigin,
+        destination: leg.resolvedDestination,
+      }));
+      const first = legs[0];
+      const mapUrl =
+        `/api/map/static?o=${encodeURIComponent(first.resolvedOrigin)}` +
+        `&d=${encodeURIComponent(first.resolvedDestination)}` +
+        `&sig=${signMapParams(first.resolvedOrigin, first.resolvedDestination, env.QUOTE_SECRET)}`;
+
+      return jsonSuccess({
+        quote,
+        token: signQuote(quote, env.QUOTE_SECRET),
+        resolved,
+        mapUrl,
+      });
     } catch (error) {
       if (error instanceof DistanceProviderError) {
         // Spec: "Distance Provider Failure Handling" — a provider outage
