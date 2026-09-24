@@ -10,6 +10,7 @@ import { z } from "zod";
 import { getActivePricingRules } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
+import { legSchema } from "@/lib/api/schemas";
 import {
   DistanceProviderError,
   GoogleDistanceProvider,
@@ -20,17 +21,7 @@ import { createQuoteExpiry, signQuote, type QuotePayload } from "@/lib/quote";
 
 const previewSchema = z.object({
   // Exactly 1 or 2 fixed legs (ida/vuelta) per MVP scope decision.
-  legs: z
-    .array(
-      z.object({
-        origin: z.string().min(1),
-        destination: z.string().min(1),
-        /** ISO 8601 timestamp of when the leg departs. */
-        scheduledAt: z.iso.datetime(),
-      }),
-    )
-    .min(1)
-    .max(2),
+  legs: z.array(legSchema).min(1).max(2),
 });
 
 export const POST = mutationRoute({
