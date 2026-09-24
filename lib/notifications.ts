@@ -18,6 +18,7 @@ import {
   markNotificationSent,
 } from "@/db/queries";
 import { formatCents, formatLegDateTime } from "./format";
+import { SNACK_LABELS } from "./labels";
 import { getEnv } from "./env";
 
 /** Minimal trip shape the notification copy needs — keeps callers loose. */
@@ -29,6 +30,11 @@ interface TripContactInfo {
     scheduledAt: Date;
   }>;
   totalPriceCents: number;
+  extras?: {
+    snackChoice: string;
+    spotifyPlaylistUrl: string | null;
+    acTemperatureCelsius: number | null;
+  } | null;
   assignedDriver?: { name: string; phone: string } | null;
   assignedCar?: { make: string; model: string; plate: string } | null;
 }
@@ -74,7 +80,101 @@ function approvalEmailText(trip: TripContactInfo): string {
     trip.assignedCar && trip.assignedDriver
       ? `Auto: ${trip.assignedCar.make} ${trip.assignedCar.model} (${trip.assignedCar.plate}) · Chofer: ${trip.assignedDriver.name}`
       : "";
-  return `Tu viaje Carhaus fue confirmado.\n\n${legs}\n\nPrecio: ${formatCents(trip.totalPriceCents)}\n${assignment}`;
+  const waLink = whatsAppLinkForTrip(trip);
+  const wa = waLink ? `\n\nCoordiná con tu chofer: ${waLink}` : "";
+  return `Tu viaje Carhaus fue confirmado.\n\n${legs}\n\nPrecio: ${formatCents(trip.totalPriceCents)}\n${assignment}${wa}`;
+}
+
+/** Email-HTML escape — origins/destinations/URLs are free user input. */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function detailRow(label: string, value: string): string {
+  return `<tr>
+    <td style="padding:10px 0;border-bottom:1px solid #e4e4e7;color:#71717a;font-size:13px;vertical-align:top;width:110px">${label}</td>
+    <td style="padding:10px 0;border-bottom:1px solid #e4e4e7;color:#1E1B4B;font-size:15px;font-weight:600;text-align:right">${value}</td>
+  </tr>`;
+}
+
+function approvalEmailHtml(trip: TripContactInfo): string {
+  const origin = getEnv().APP_ORIGIN;
+  const logoUrl = `${origin}/logo-header.png`;
+  const rows: string[] = [];
+
+  for (const leg of trip.legs) {
+    const tag = leg.sequence === 1 ? "Ida" : "Vuelta";
+    rows.push(
+      detailRow(
+        `${tag} · Origen`,
+        esc(leg.origin),
+      ),
+      detailRow(`${tag} · Destino`, esc(leg.destination)),
+      detailRow(`${tag} · Fecha`, esc(formatLegDateTime(leg.scheduledAt))),
+    );
+  }
+
+  if (trip.extras && trip.extras.snackChoice !== "none") {
+    rows.push(
+      detailRow("Snacks", esc(SNACK_LABELS[trip.extras.snackChoice] ?? trip.extras.snackChoice)),
+    );
+  }
+  if (trip.extras?.spotifyPlaylistUrl) {
+    rows.push(
+      detailRow(
+        "Playlist",
+        `<a href="${esc(trip.extras.spotifyPlaylistUrl)}" style="color:#1E1B4B;text-decoration:underline">Spotify</a>`,
+      ),
+    );
+  }
+
+  rows.push(detailRow("Precio", esc(formatCents(trip.totalPriceCents))));
+
+  if (trip.assignedCar) {
+    rows.push(
+      detailRow(
+        "Auto",
+        esc(`${trip.assignedCar.make} ${trip.assignedCar.model} · ${trip.assignedCar.plate}`),
+      ),
+    );
+  }
+  if (trip.assignedDriver) {
+    rows.push(detailRow("Chofer", esc(trip.assignedDriver.name)));
+  }
+
+  const waLink = whatsAppLinkForTrip(trip);
+  const waButton = waLink
+    ? `<tr><td align="center" style="padding:28px 0 8px">
+        <a href="${esc(waLink)}" style="display:inline-block;background:#F5C518;color:#1E1B4B;font-size:15px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px">Coordinar por WhatsApp${trip.assignedDriver ? ` con ${esc(trip.assignedDriver.name)}` : ""}</a>
+      </td></tr>`
+    : "";
+
+  return `<!doctype html>
+<html><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden">
+        <tr><td align="center" style="background:#1E1B4B;padding:24px">
+          <img src="${esc(logoUrl)}" alt="Carhaus" width="140" style="display:block;border:0" />
+        </td></tr>
+        <tr><td style="padding:32px 32px 8px">
+          <p style="margin:0 0 4px;color:#F5C518;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Viaje confirmado</p>
+          <h1 style="margin:0 0 24px;color:#1E1B4B;font-size:26px;font-weight:800">Tu viaje quedó confirmado</h1>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows.join("")}</table>
+        </td></tr>
+        ${waButton}
+        <tr><td style="padding:24px 32px 32px;text-align:center">
+          <p style="margin:0;color:#71717a;font-size:14px">Gracias por viajar con nosotros.</p>
+          <p style="margin:4px 0 0;color:#1E1B4B;font-size:14px;font-weight:700;font-style:italic">Tu viaje, a tu medida.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
 }
 
 /** Throws when Resend isn't configured or the send fails — callers catch. */
@@ -93,6 +193,7 @@ async function sendApprovalEmail(
     to,
     subject: "Tu viaje Carhaus fue confirmado",
     text: approvalEmailText(trip),
+    html: approvalEmailHtml(trip),
   });
 
   if (error) {
