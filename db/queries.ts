@@ -2,6 +2,7 @@ import "server-only";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  admins,
   pricingRules,
   tripExtras,
   tripLegs,
@@ -99,6 +100,16 @@ export async function createTripBooking(input: {
   ]);
 
   return { id: tripId, publicToken: tripRows[0].publicToken };
+}
+
+/** Admin login lookup — the only place `passwordHash` is read. */
+export async function getAdminByEmail(email: string) {
+  const [admin] = await db
+    .select()
+    .from(admins)
+    .where(eq(admins.email, email))
+    .limit(1);
+  return admin ?? null;
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
