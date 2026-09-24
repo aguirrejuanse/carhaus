@@ -22,24 +22,24 @@ export function BookingForm() {
   const form = useBookingForm();
 
   return (
-    <form ref={form.formRef} action={form.formAction} className="w-full">
+    <form ref={form.formRef} onSubmit={form.onSubmit} className="w-full">
       <FieldGroup>
         <LegFields
-          fields={form.state.fields}
+          fields={form.fields}
           roundTrip={form.roundTrip}
           onRoundTripChange={form.setRoundTrip}
           onLegChange={form.bumpLegs}
         />
         <ExtrasFields
-          fields={form.state.fields}
+          fields={form.fields}
           snackChoice={form.snackChoice}
           onSnackChange={form.setSnackChoice}
         />
         <PreviewPanel preview={form.preview} status={form.previewStatus} />
 
-        {form.state.error && (
+        {form.error && (
           <p role="alert" className="text-sm text-destructive">
-            {form.state.error}
+            {form.error}
           </p>
         )}
 
