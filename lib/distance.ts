@@ -17,6 +17,10 @@ const REQUEST_TIMEOUT_MS = 5000;
 export interface DistanceResult {
   distanceMeters: number;
   durationSeconds: number;
+  /** Formatted addresses as the provider resolved them — surfaced to the
+   *  rider so they can confirm Google picked the right places. */
+  resolvedOrigin: string;
+  resolvedDestination: string;
 }
 
 export interface DistanceProvider {
@@ -47,6 +51,8 @@ interface GoogleDistanceMatrixElement {
 
 interface GoogleDistanceMatrixResponse {
   status: string;
+  origin_addresses?: string[];
+  destination_addresses?: string[];
   rows?: Array<{ elements: GoogleDistanceMatrixElement[] }>;
 }
 
@@ -117,6 +123,8 @@ export class GoogleDistanceProvider implements DistanceProvider {
     return {
       distanceMeters: element.distance.value,
       durationSeconds: element.duration.value,
+      resolvedOrigin: body.origin_addresses?.[0] ?? origin,
+      resolvedDestination: body.destination_addresses?.[0] ?? destination,
     };
   }
 }
