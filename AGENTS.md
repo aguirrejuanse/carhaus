@@ -42,6 +42,13 @@ Drizzle ORM + Neon Postgres, Zod 4, Vitest, jose, Resend, pnpm.
   (e.g. `TRIP_TYPE` / `TripType`) — no TS enums.
 - Server-only code lives in `lib/` and `db/`; client components use
   `"use client"` and call mutations via `apiFetch` (`lib/api-client.ts`).
+- Client data access uses TanStack Query: folder-per-hook in
+  `app/_hooks/use<name>-{query,mutation}/` (hook file + `index.ts` barrel),
+  services in `lib/services/<domain>.ts`. The service layer is the only
+  place that knows the HTTP contract — a backend migration (e.g. Nest)
+  touches services only, hooks and components stay identical.
+- Mutations are never retried silently (`retry: false` in
+  `app/providers.tsx`) — a retry could double-book or double-notify.
 - Route tests sit next to the route (`route.test.ts`) and stub external
   providers (Google Distance Matrix via `fetch`, `Resend` via class mock).
 - `getEnv()` caches the parsed env — tests that mutate env vars mock
