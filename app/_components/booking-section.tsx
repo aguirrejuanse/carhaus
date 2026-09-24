@@ -21,7 +21,8 @@ export function BookingSection({
 }) {
   // Server-fetched templates seed the query cache; a save from the
   // confirmation page invalidates this and the list refreshes on its own.
-  const { data: templates = [] } = useTemplatesQuery(initialTemplates);
+  const { data: templates = [], isPending } =
+    useTemplatesQuery(initialTemplates);
   const [initial, setInitial] = useState<BookingInitial | undefined>();
   const [formKey, setFormKey] = useState(0);
 
@@ -39,8 +40,16 @@ export function BookingSection({
 
   return (
     <div className="flex w-full flex-col gap-10">
-      <TemplateList templates={templates} onApply={applyTemplate} />
-      <BookingForm key={formKey} initial={initial} />
+      <TemplateList
+        templates={templates}
+        isLoading={isPending}
+        onApply={applyTemplate}
+      />
+      {/* Keyed wrapper remounts on template apply — the fade keeps the
+          swap from feeling like a hard cut. */}
+      <div key={formKey} className="animate-in fade-in duration-300">
+        <BookingForm initial={initial} />
+      </div>
     </div>
   );
 }
