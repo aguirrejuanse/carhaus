@@ -9,8 +9,8 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | Unit | Goal | PR | Depends on | Status |
 |---|---|---|---|---|
 | 1 | Scaffold + schema + seed (Ph.1-2) | PR1 | — | ✅ merged |
-| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | in review |
-| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | pending |
+| 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | ✅ merged |
+| 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | done |
 | 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | pending |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | pending |
 | 6 | Admin login (Ph.7) | PR6 | PR3 | pending |
@@ -37,11 +37,11 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 3.3 `lib/quote.ts` HMAC sign/verify quote token; test sign/verify/expiry
 
 ## Phase 4: API Guards + Auth
-- [ ] 4.1 `lib/api/guards.ts` assertSameOrigin; test missing/foreign/matching Origin
-- [ ] 4.2 `lib/api/errors.ts` error envelope + codes (400/401/403/409/422/502)
-- [ ] 4.3 `lib/api/route.ts` mutationRoute() wrapper (origin→admin?→zod→handler→errors)
-- [ ] 4.4 `lib/auth.ts` admin JWT sign/verify (jose) + requireAdmin(); test absent/expired/tampered
-- [ ] 4.5 `middleware.ts` matcher `/admin/:path*` (spec: Gated Admin Route)
+- [x] 4.1 `lib/api/guards.ts` assertSameOrigin; test missing/foreign/matching Origin
+- [x] 4.2 `lib/api/errors.ts` error envelope + codes (400/401/403/409/422/502)
+- [x] 4.3 `lib/api/route.ts` mutationRoute() wrapper (origin→admin?→zod→handler→errors)
+- [x] 4.4 `lib/auth.ts` admin JWT sign/verify (jose) + requireAdmin(); test absent/expired/tampered
+- [x] 4.5 `middleware.ts` matcher `/admin/:path*` (spec: Gated Admin Route)
 
 ## Phase 5: Pricing Preview Route
 - [ ] 5.1 `app/api/pricing/preview/route.ts` POST via mutationRoute (spec: Price Preview)
