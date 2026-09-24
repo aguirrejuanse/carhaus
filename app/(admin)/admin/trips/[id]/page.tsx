@@ -7,6 +7,7 @@
 
 import { notFound } from "next/navigation";
 import { getActiveCars, getDrivers, getTripForAdmin } from "@/db/queries";
+import { whatsAppLinkForTrip } from "@/lib/notifications";
 import { TripActions } from "./trip-actions";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,9 @@ export default async function AdminTripPage({
     getDrivers(),
   ]);
   if (!trip) notFound();
+
+  const waLink =
+    trip.status === "approved" ? whatsAppLinkForTrip(trip) : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-16">
@@ -114,6 +118,16 @@ export default async function AdminTripPage({
             Asignado: {trip.assignedCar?.make} {trip.assignedCar?.model} (
             {trip.assignedCar?.plate}) · {trip.assignedDriver?.name}
           </p>
+        )}
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            WhatsApp {trip.assignedDriver?.name ?? "operador"}
+          </a>
         )}
         {trip.status === "rejected" && trip.rejectionReason && (
           <p className="text-sm text-muted-foreground">

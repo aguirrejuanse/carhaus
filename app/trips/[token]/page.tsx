@@ -7,6 +7,7 @@
 
 import { notFound } from "next/navigation";
 import { getTripByPublicToken } from "@/db/queries";
+import { whatsAppLinkForTrip } from "@/lib/notifications";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "medium",
@@ -41,6 +42,11 @@ export default async function TripConfirmationPage({
   const { token } = await params;
   const trip = await getTripByPublicToken(token);
   if (!trip) notFound();
+
+  // Spec "WhatsApp Deep Link": surfaced to the rider once the trip is
+  // approved — driver phone, else the operator fallback.
+  const waLink =
+    trip.status === "approved" ? whatsAppLinkForTrip(trip) : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-16 sm:py-24">
@@ -106,6 +112,17 @@ export default async function TripConfirmationPage({
               </li>
             )}
           </ul>
+        )}
+
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Coordinar por WhatsApp{trip.assignedDriver && ` con ${trip.assignedDriver.name}`}
+          </a>
         )}
       </section>
     </main>

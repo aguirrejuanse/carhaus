@@ -2,12 +2,17 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { approveTrip, getTripForAdmin, rejectTrip } from "@/db/queries";
 import { signAdminSession } from "@/lib/auth";
+import { dispatchApprovalNotification } from "@/lib/notifications";
 import { PATCH } from "./route";
 
 vi.mock("@/db/queries", () => ({
   getTripForAdmin: vi.fn(),
   approveTrip: vi.fn(),
   rejectTrip: vi.fn(),
+}));
+
+vi.mock("@/lib/notifications", () => ({
+  dispatchApprovalNotification: vi.fn(async () => {}),
 }));
 
 const APP_ORIGIN = "https://carhaus.example.com";
@@ -107,6 +112,8 @@ describe("PATCH /api/admin/trips/[id]", () => {
       driverId: DRIVER_ID,
       riderEmail: "rider@example.com",
     });
+    // Approval email dispatch fires after the commit (design "Data Flow").
+    expect(dispatchApprovalNotification).toHaveBeenCalledWith(TRIP_ID);
   });
 
   it("returns 200 and rejects with a reason", async () => {
@@ -123,6 +130,8 @@ describe("PATCH /api/admin/trips/[id]", () => {
       tripId: TRIP_ID,
       reason: "No cars available",
     });
+    // Spec "Reject Trip": no notification on reject.
+    expect(dispatchApprovalNotification).not.toHaveBeenCalled();
   });
 
   it("returns 401 without an admin session", async () => {
