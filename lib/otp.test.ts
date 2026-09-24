@@ -58,7 +58,12 @@ const sendEmail = vi.hoisted(() =>
     ) => Promise<void>
   >(async () => {}),
 );
-vi.mock("@/lib/email", () => ({ sendEmail }));
+vi.mock("@/lib/email", () => ({
+  sendEmail,
+  brandedEmailHtml: (opts: { body: string }) => `<html>${opts.body}</html>`,
+  logoAttachment: () => null,
+  logoAttachments: () => undefined,
+}));
 
 import { ApiError } from "./api/errors";
 import { requestEmailCode, verifyEmailCode } from "./otp";

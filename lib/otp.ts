@@ -21,7 +21,12 @@ import {
   upsertUserByEmail,
 } from "@/db/queries";
 import { ApiError } from "./api/errors";
-import { sendEmail } from "./email";
+import {
+  brandedEmailHtml,
+  logoAttachment,
+  logoAttachments,
+  sendEmail,
+} from "./email";
 import { getEnv } from "./env";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -77,24 +82,25 @@ export async function requestEmailCode(
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
   });
 
+  const logo = logoAttachment();
   try {
     await sendEmail(
       {
-      to: email,
-      subject: `${code} es tu código Carhaus`,
-      text: `Tu código de verificación Carhaus es ${code}. Vence en 10 minutos.`,
-      html: `<!doctype html><html><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px"><tr><td align="center">
-    <table role="presentation" width="420" cellpadding="0" cellspacing="0" style="max-width:420px;width:100%;background:#ffffff;border-radius:12px">
-      <tr><td style="padding:32px;text-align:center">
-        <p style="margin:0 0 8px;color:#1E1B4B;font-size:16px;font-weight:800">Tu código Carhaus</p>
-        <p style="margin:0;color:#71717a;font-size:14px">Ingresalo para confirmar tu viaje:</p>
-        <p style="margin:20px 0;color:#1E1B4B;font-size:36px;font-weight:800;letter-spacing:8px">${code}</p>
-        <p style="margin:0;color:#71717a;font-size:12px">Vence en 10 minutos.</p>
-      </td></tr>
-    </table>
-  </td></tr></table>
-</body></html>`,
+        to: email,
+        subject: `${code} es tu código Carhaus`,
+        text: `Tu código de verificación Carhaus es ${code}. Vence en 10 minutos.`,
+        html: brandedEmailHtml({
+          accent: "#1E1B4B",
+          eyebrow: "Código de verificación",
+          title: "Tu código Carhaus",
+          body: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+            <p style="margin:0;color:#71717a;font-size:14px">Ingresalo para confirmar tu viaje:</p>
+            <p style="margin:20px 0;color:#1E1B4B;font-size:36px;font-weight:800;letter-spacing:8px">${code}</p>
+            <p style="margin:0;color:#71717a;font-size:12px">Vence en 10 minutos.</p>
+          </td></tr></table>`,
+          footer: "Si no pediste este código, ignorá este email.",
+        }),
+        attachments: logoAttachments(logo),
       },
       { idempotencyKey: `otp/${row?.id ?? crypto.randomUUID()}` },
     );
