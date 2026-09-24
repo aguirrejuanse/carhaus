@@ -15,15 +15,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { toDateTimeInputValue } from "@/lib/format";
 import { PlaceInput } from "./place-input";
-import type { FieldErrors } from "./types";
-
-const TRIP_MODE_OPTIONS = [
-  { value: false, label: "Solo ida" },
-  { value: true, label: "Ida y vuelta" },
-] as const;
+import { TripModeToggle } from "./trip-mode-toggle";
+import type { BookingInitial, FieldErrors } from "./types";
 
 interface Props {
   fields: FieldErrors;
+  initial?: BookingInitial;
   roundTrip: boolean;
   onRoundTripChange: (value: boolean) => void;
   onLegChange: () => void;
@@ -31,6 +28,7 @@ interface Props {
 
 export function LegFields({
   fields,
+  initial,
   roundTrip,
   onRoundTripChange,
   onLegChange,
@@ -66,6 +64,7 @@ export function LegFields({
             id="origin"
             name="origin"
             placeholder="Ej. Guaymallén"
+            defaultValue={initial?.origin}
             onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.origin"]?.[0]}</FieldError>
@@ -76,6 +75,7 @@ export function LegFields({
             id="destination"
             name="destination"
             placeholder="Ej. Plaza Shopping"
+            defaultValue={initial?.destination}
             onValueCommit={onLegChange}
           />
           <FieldError>{fields?.["legs.0.destination"]?.[0]}</FieldError>
@@ -99,22 +99,7 @@ export function LegFields({
       </Field>
 
       <Field orientation="horizontal">
-        <div className="inline-flex rounded-lg border border-border p-0.5">
-          {TRIP_MODE_OPTIONS.map((opt) => (
-            <button
-              key={opt.label}
-              type="button"
-              onClick={() => onRoundTripChange(opt.value)}
-              className={`cursor-pointer rounded-md px-3 py-1.5 text-sm transition-all duration-200 ${
-                roundTrip === opt.value
-                  ? "bg-accent font-medium text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <TripModeToggle roundTrip={roundTrip} onChange={onRoundTripChange} />
       </Field>
 
       {roundTrip && (

@@ -12,6 +12,7 @@ import { whatsAppLinkForTrip } from "@/lib/notifications";
 import { RiderTrips } from "@/app/_components/rider-trips";
 import { Button } from "@/components/ui/button";
 import { ConfirmationHeader } from "./confirmation-header";
+import { SaveTemplateButton } from "./save-template";
 import { TripSummary } from "./trip-summary";
 
 export default async function TripConfirmationPage({
@@ -48,6 +49,18 @@ export default async function TripConfirmationPage({
           {trip.assignedDriver && ` con ${trip.assignedDriver.name}`}
         </a>
       )}
+      <SaveTemplateButton
+        legs={trip.legs.map((leg) => ({
+          origin: leg.origin,
+          destination: leg.destination,
+        }))}
+        extras={{
+          snackChoice: trip.extras?.snackChoice ?? "none",
+          spotifyPlaylistUrl: trip.extras?.spotifyPlaylistUrl ?? undefined,
+          acTemperatureCelsius: trip.extras?.acTemperatureCelsius ?? undefined,
+        }}
+        defaultName={`${trip.legs[0].origin} → ${trip.legs[0].destination}`}
+      />
       <Button
         render={<Link href="/" />}
         variant="outline"

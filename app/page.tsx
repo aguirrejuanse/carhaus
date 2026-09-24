@@ -1,6 +1,17 @@
-import { BookingForm } from "./_components/booking-form";
+import { cookies } from "next/headers";
+import { listTemplatesByRiderEmail } from "@/db/queries";
+import { RIDER_COOKIE_NAME, riderFromCookieValue } from "@/lib/rider";
+import { BookingSection } from "./_components/booking-section";
 
-export default function Home() {
+export default async function Home() {
+  // Session-scoped template listing (spec): resolve the rider from the
+  // `carhaus_rider` cookie; anonymous visitors just see the empty form.
+  const store = await cookies();
+  const rider = await riderFromCookieValue(
+    store.get(RIDER_COOKIE_NAME)?.value,
+  );
+  const templates = rider ? await listTemplatesByRiderEmail(rider.email) : [];
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-10 sm:py-14">
       <header className="flex flex-col gap-4">
@@ -18,7 +29,7 @@ export default function Home() {
 
       <hr className="border-border" />
 
-      <BookingForm />
+      <BookingSection initialTemplates={templates} />
     </main>
   );
 }

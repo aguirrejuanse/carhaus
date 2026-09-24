@@ -17,21 +17,24 @@ import { ExtrasFields } from "./extras-fields";
 import { LegFields } from "./leg-fields";
 import { PreviewPanel } from "./preview-panel";
 import { useBookingForm } from "./use-booking-form";
+import type { BookingInitial } from "./types";
 
-export function BookingForm() {
-  const form = useBookingForm();
+export function BookingForm({ initial }: { initial?: BookingInitial }) {
+  const form = useBookingForm(initial);
 
   return (
     <form ref={form.formRef} onSubmit={form.onSubmit} className="w-full">
       <FieldGroup>
         <LegFields
           fields={form.fields}
+          initial={initial}
           roundTrip={form.roundTrip}
           onRoundTripChange={form.setRoundTrip}
           onLegChange={form.bumpLegs}
         />
         <ExtrasFields
           fields={form.fields}
+          initial={initial}
           snackChoice={form.snackChoice}
           onSnackChange={form.setSnackChoice}
         />
