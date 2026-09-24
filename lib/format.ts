@@ -23,3 +23,10 @@ const legDateFormatter = new Intl.DateTimeFormat("es-AR", {
 export function formatLegDateTime(date: Date): string {
   return legDateFormatter.format(date);
 }
+
+/** `datetime-local` input value in LOCAL time (YYYY-MM-DDTHH:mm) — used for
+ *  `min`/`defaultValue` constraints on the booking date fields. */
+export function toDateTimeInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

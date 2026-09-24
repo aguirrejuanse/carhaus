@@ -38,6 +38,10 @@ export function useBookingForm(initial?: BookingInitial) {
       setValidationError("Completá origen, destino y fechas del viaje.");
       return;
     }
+    if (legs.length === 2 && legs[1].scheduledAt <= legs[0].scheduledAt) {
+      setValidationError("La vuelta tiene que ser después de la ida.");
+      return;
+    }
     setValidationError(undefined);
 
     const extras: TripExtrasInput = {
