@@ -11,7 +11,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 1 | Scaffold + schema + seed (Ph.1-2) | PR1 | — | ✅ merged |
 | 2 | Distance/pricing/quote libs + tests (Ph.3) | PR2 | PR1 | ✅ merged |
 | 3 | API guards + auth + mutationRoute (Ph.4) | PR3 | PR1 | done |
-| 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | pending |
+| 4 | Pricing preview route (Ph.5) | PR4 | PR2, PR3 | open |
 | 5 | Booking flow: `POST /api/trips` + UI (Ph.6) | PR5 | PR4 | pending |
 | 6 | Admin login (Ph.7) | PR6 | PR3 | pending |
 | 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | pending |
@@ -44,8 +44,8 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 4.5 `middleware.ts` matcher `/admin/:path*` (spec: Gated Admin Route)
 
 ## Phase 5: Pricing Preview Route
-- [ ] 5.1 `app/api/pricing/preview/route.ts` POST via mutationRoute (spec: Price Preview)
-- [ ] 5.2 Integration test: 200 quote, 502 on provider failure
+- [x] 5.1 `app/api/pricing/preview/route.ts` POST via mutationRoute (spec: Price Preview)
+- [x] 5.2 Integration test: 200 quote, 502 on provider failure
 
 ## Phase 6: Booking Flow
 - [ ] 6.1 `app/api/trips/route.ts` POST — verify quote, upsert user by email, batch tx trips+trip_legs+trip_extras, set `carhaus_rider` cookie, publicToken (spec: Rider Trip Request, Email-Keyed Identity, Trip Extras)

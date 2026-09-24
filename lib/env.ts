@@ -22,7 +22,11 @@ export function getEnv(): Env {
   if (cachedEnv) return cachedEnv;
 
   const parsed = envSchema.safeParse({
-    APP_ORIGIN: process.env.APP_ORIGIN,
+    // On Vercel each deployment has its own URL; VERCEL_URL is always set
+    // (build + runtime) so previews get a working APP_ORIGIN automatically.
+    APP_ORIGIN:
+      process.env.APP_ORIGIN ??
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined),
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
     QUOTE_SECRET: process.env.QUOTE_SECRET,
