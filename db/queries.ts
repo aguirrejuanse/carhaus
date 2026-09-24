@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  adminLoginAttempts,
   admins,
   cars,
   drivers,
@@ -16,6 +17,7 @@ import {
   tripTemplates,
   trips,
   users,
+  verificationCodes,
   type SnackChoice,
   type TemplateLeg,
   type TripStatus,
@@ -346,6 +348,98 @@ export async function markNotificationFailed(id: string, message: string) {
     .update(notifications)
     .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
     .where(eq(notifications.id, id));
+}
+
+/** Admin login attempts from one IP inside `windowMs` — the brute-force
+ *  cap; each attempt (success or not) leaves a row. */
+export async function recordAdminLoginAttempt(ip: string) {
+  await db.insert(adminLoginAttempts).values({ ip });
+}
+
+export async function countRecentAdminLoginAttempts(
+  ip: string,
+  windowMs: number,
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(adminLoginAttempts)
+    .where(
+      and(
+        eq(adminLoginAttempts.ip, ip),
+        gt(
+          adminLoginAttempts.createdAt,
+          new Date(Date.now() - windowMs),
+        ),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+// Verification codes (email OTP) — one active code per email, enforced by
+// the unique constraint; a re-request upserts and resets attempts.
+
+export async function replaceVerificationCode(input: {
+  email: string;
+  codeHash: string;
+  requestIp?: string;
+  expiresAt: Date;
+}) {
+  const [inserted] = await db
+    .insert(verificationCodes)
+    .values(input)
+    .onConflictDoUpdate({
+      target: verificationCodes.email,
+      set: {
+        codeHash: input.codeHash,
+        requestIp: input.requestIp,
+        expiresAt: input.expiresAt,
+        attempts: 0,
+        createdAt: new Date(),
+      },
+    })
+    .returning();
+  return inserted ?? null;
+}
+
+/** OTP requests from one IP inside `windowMs` — caps spraying codes at
+ *  many different emails (each request leaves its row behind). */
+export async function countRecentVerificationRequests(
+  ip: string,
+  windowMs: number,
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(verificationCodes)
+    .where(
+      and(
+        eq(verificationCodes.requestIp, ip),
+        gt(verificationCodes.createdAt, new Date(Date.now() - windowMs)),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+/** Latest active code for an email — expiry is checked by the caller so a
+ *  stale row can still be cleaned up deterministically. */
+export async function getLatestVerificationCode(email: string) {
+  const [row] = await db
+    .select()
+    .from(verificationCodes)
+    .where(eq(verificationCodes.email, email))
+    .orderBy(desc(verificationCodes.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function bumpVerificationAttempts(id: string) {
+  await db
+    .update(verificationCodes)
+    .set({ attempts: sql`${verificationCodes.attempts} + 1` })
+    .where(eq(verificationCodes.id, id));
+}
+
+export async function deleteVerificationCode(id: string) {
+  await db.delete(verificationCodes).where(eq(verificationCodes.id, id));
 }
 
 // Templates (spec: "Save Recurring Template", "Session-Scoped Template

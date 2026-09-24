@@ -50,6 +50,8 @@ export function SaveTemplateButton({ legs, extras, defaultName }: Props) {
         <Input
           name="name"
           defaultValue={defaultName}
+          required
+          maxLength={100}
           aria-label="Nombre de la plantilla"
           className="max-w-xs"
         />

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { getActivePricingRules } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
-import { legSchema } from "@/lib/api/schemas";
+import { legsSchema } from "@/lib/api/schemas";
 import {
   DistanceProviderError,
   GoogleDistanceProvider,
@@ -26,7 +26,7 @@ import {
 
 const previewSchema = z.object({
   // Exactly 1 or 2 fixed legs (ida/vuelta) per MVP scope decision.
-  legs: z.array(legSchema).min(1).max(2),
+  legs: legsSchema,
 });
 
 /** Distance Matrix accepts `place_id:` references — an exact place beats

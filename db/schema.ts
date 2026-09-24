@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -219,6 +220,36 @@ export const notifications = pgTable("notifications", {
   recipient: text("recipient").notNull(),
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Brute-force cap on admin login — each attempt leaves a row; the route
+ *  429s an IP past the window limit (see app/api/admin/login). */
+export const adminLoginAttempts = pgTable(
+  "admin_login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ip: text("ip").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("admin_login_attempts_ip_idx").on(t.ip)],
+);
+
+/** One active code per email — the unique constraint enforces it (the
+ *  upsert in db/queries.ts resets attempts on re-request). Codes are
+ *  stored HMAC-hashed, expire in 10 min, and allow max 5 verify attempts.
+ *  `requestIp` feeds the per-IP request cap. */
+export const verificationCodes = pgTable("verification_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  requestIp: text("request_ip"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

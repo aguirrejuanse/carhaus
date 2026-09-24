@@ -125,6 +125,7 @@ describe("dispatchTripNotification", () => {
         to: "rider@example.com",
         subject: expect.stringContaining("confirmado"),
       }),
+      { idempotencyKey: "notification/notif-1" },
     );
     expect(markNotificationSent).toHaveBeenCalledWith("notif-1");
   });
@@ -165,6 +166,7 @@ describe("dispatchTripNotification", () => {
         subject: expect.stringContaining("No pudimos tomar"),
         html: expect.stringContaining("Sin disponibilidad"),
       }),
+      { idempotencyKey: "notification/notif-1" },
     );
     expect(markNotificationSent).toHaveBeenCalledWith("notif-1");
   });

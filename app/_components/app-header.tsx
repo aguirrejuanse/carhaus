@@ -51,6 +51,14 @@ export async function AppHeader() {
           <LogoutButton endpoint="/api/rider/logout" redirectTo="/" />
         </div>
       )}
+      {!rider && !admin && (
+        <Link
+          href="/ingresar"
+          className="text-sm font-medium transition-colors duration-200 hover:text-muted-foreground"
+        >
+          Ingresar
+        </Link>
+      )}
       {!rider && admin && (
         <div className="flex items-center gap-3 text-sm">
           <span className="text-muted-foreground">

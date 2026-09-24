@@ -11,7 +11,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/errors";
 import type { TripExtrasInput, TripLegInput } from "@/lib/services/booking";
-import { useCreateTripMutation } from "@/app/_hooks/use-create-trip-mutation";
+import {
+  useCreateTripMutation,
+  type CreateTripParams,
+} from "@/app/_hooks/use-create-trip-mutation";
 import { useTripPreviewMutation } from "@/app/_hooks/use-trip-preview-mutation";
 import type { BookingInitial } from "./types";
 
@@ -29,6 +32,13 @@ export function useBookingForm(initial?: BookingInitial) {
 
   const preview = useTripPreviewMutation();
   const createTrip = useCreateTripMutation();
+
+  // Anonymous submit → 401 → keep the payload + email and hand off to the
+  // OTP step; `retryBooking` resubmits once `carhaus_rider` is set.
+  const [pending, setPending] = useState<{
+    email: string;
+    payload: CreateTripParams;
+  } | null>(null);
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -52,12 +62,20 @@ export function useBookingForm(initial?: BookingInitial) {
         ? Number(formData.get("acTemperatureCelsius"))
         : undefined,
     };
-    createTrip.mutate({
-      email: String(formData.get("email") ?? ""),
+    const payload: CreateTripParams = {
       quoteToken: preview.data?.token,
       legs,
       extras,
+    };
+    setPending({
+      email: String(formData.get("email") ?? ""),
+      payload,
     });
+    createTrip.mutate(payload);
+  };
+
+  const retryBooking = () => {
+    if (pending) createTrip.mutate(pending.payload);
   };
 
   /** Debounced preview: re-quotes whenever the leg fields change. */
@@ -78,11 +96,15 @@ export function useBookingForm(initial?: BookingInitial) {
   }, [roundTrip, legsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const apiError = createTrip.error instanceof ApiError ? createTrip.error : null;
+  const needsVerification = pending !== null && apiError?.status === 401;
 
   return {
     formRef,
     onSubmit,
     isPending: createTrip.isPending,
+    needsVerification,
+    verificationEmail: pending?.email,
+    retryBooking,
     error:
       validationError ??
       apiError?.message ??

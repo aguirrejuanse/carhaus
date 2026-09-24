@@ -16,8 +16,10 @@ import { TemplateList } from "./template-list";
 
 export function BookingSection({
   initialTemplates,
+  riderEmail,
 }: {
   initialTemplates: TemplateItem[];
+  riderEmail?: string;
 }) {
   // Server-fetched templates seed the query cache; a save from the
   // confirmation page invalidates this and the list refreshes on its own.
@@ -48,7 +50,7 @@ export function BookingSection({
       {/* Keyed wrapper remounts on template apply — the fade keeps the
           swap from feeling like a hard cut. */}
       <div key={formKey} className="animate-in fade-in duration-300">
-        <BookingForm initial={initial} />
+        <BookingForm initial={initial} riderEmail={riderEmail} />
       </div>
     </div>
   );

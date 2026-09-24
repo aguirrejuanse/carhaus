@@ -51,7 +51,6 @@ export function requestPricePreview(
 }
 
 export function submitTripRequest(input: {
-  email: string;
   quoteToken?: string;
   legs: TripLegInput[];
   extras: TripExtrasInput;

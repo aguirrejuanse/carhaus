@@ -21,6 +21,9 @@ import type { BookingInitial, FieldErrors } from "./types";
 interface Props {
   fields: FieldErrors;
   initial?: BookingInitial;
+  /** Signed-in rider email — shown read-only; anonymous riders type it and
+   *  verify by OTP on submit. */
+  riderEmail?: string;
   roundTrip: boolean;
   onRoundTripChange: (value: boolean) => void;
   onLegChange: () => void;
@@ -29,6 +32,7 @@ interface Props {
 export function LegFields({
   fields,
   initial,
+  riderEmail,
   roundTrip,
   onRoundTripChange,
   onLegChange,
@@ -48,6 +52,8 @@ export function LegFields({
           name="email"
           type="email"
           required
+          defaultValue={riderEmail}
+          readOnly={Boolean(riderEmail)}
           placeholder="vos@ejemplo.com"
           autoComplete="email"
         />

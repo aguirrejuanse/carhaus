@@ -11,7 +11,11 @@
 
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { getAdminByEmail } from "@/db/queries";
+import {
+  countRecentAdminLoginAttempts,
+  getAdminByEmail,
+  recordAdminLoginAttempt,
+} from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
 import { ADMIN_COOKIE_NAME, signAdminSession } from "@/lib/auth";
@@ -29,9 +33,27 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+/** Brute-force cap — per source IP, same pattern as the OTP cap. */
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
+
 export const POST = mutationRoute({
   schema: loginSchema,
-  handler: async (input) => {
+  handler: async (input, req) => {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (
+      ip &&
+      (await countRecentAdminLoginAttempts(ip, LOGIN_WINDOW_MS)) >=
+        LOGIN_MAX_ATTEMPTS
+    ) {
+      throw new ApiError(
+        429,
+        "login_rate_limited",
+        "Demasiados intentos — probá más tarde",
+      );
+    }
+    if (ip) await recordAdminLoginAttempt(ip);
+
     const admin = await getAdminByEmail(input.email);
     const passwordOk =
       admin !== null &&

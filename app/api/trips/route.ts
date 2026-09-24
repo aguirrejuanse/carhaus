@@ -16,33 +16,42 @@
  */
 
 import { z } from "zod";
-import {
-  createTripBooking,
-  upsertUserByEmail,
-  type NewBookingLeg,
-} from "@/db/queries";
+import { createTripBooking, type NewBookingLeg } from "@/db/queries";
 import { TRIP_TYPE } from "@/db/schema";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
-import { extrasSchema, legSchema } from "@/lib/api/schemas";
+import { extrasSchema, legsSchema } from "@/lib/api/schemas";
 import { getEnv } from "@/lib/env";
 import { verifyQuote } from "@/lib/quote";
-import { riderSessionCookie, signRiderSession } from "@/lib/rider";
+import { RIDER_COOKIE_NAME, riderFromCookieValue } from "@/lib/rider";
 
 const bookingSchema = z.object({
-  email: z.email(),
   /** Signed quote from `POST /api/pricing/preview`; absent only when the
    *  distance provider was unavailable (see module docstring). */
   quoteToken: z.string().optional(),
   /** Client echoes the legs it previewed; the signed quote is the source
    *  of truth for persisted distance/duration/price when present. */
-  legs: z.array(legSchema).min(1).max(2),
+  legs: legsSchema,
   extras: extrasSchema,
 });
 
 export const POST = mutationRoute({
   schema: bookingSchema,
-  handler: async (input) => {
+  handler: async (input, req) => {
+    // Booking requires a verified email — `POST /api/auth/verify` is the
+    // only issuer of the rider session. Without it the trip never reaches
+    // the admin queue (spec: booking verification).
+    const rider = await riderFromCookieValue(
+      req.cookies.get(RIDER_COOKIE_NAME)?.value,
+    );
+    if (!rider) {
+      throw new ApiError(
+        401,
+        "unauthorized",
+        "Verificá tu email para pedir el viaje",
+      );
+    }
+
     const env = getEnv();
 
     let legs: NewBookingLeg[];
@@ -77,18 +86,14 @@ export const POST = mutationRoute({
       totalPriceCents = 0;
     }
 
-    const user = await upsertUserByEmail(input.email);
     const trip = await createTripBooking({
-      userId: user.id,
+      userId: rider.userId,
       tripType: legs.length === 2 ? TRIP_TYPE.ROUND_TRIP : TRIP_TYPE.ONE_WAY,
       totalPriceCents,
       legs,
       extras: input.extras,
     });
 
-    const riderToken = await signRiderSession(user.id);
-    const res = jsonSuccess({ publicToken: trip.publicToken }, 201);
-    res.headers.append("set-cookie", riderSessionCookie(riderToken));
-    return res;
+    return jsonSuccess({ publicToken: trip.publicToken }, 201);
   },
 });

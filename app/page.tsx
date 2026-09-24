@@ -29,7 +29,10 @@ export default async function Home() {
 
       <hr className="border-border" />
 
-      <BookingSection initialTemplates={templates} />
+      <BookingSection
+        initialTemplates={templates}
+        riderEmail={rider?.email}
+      />
     </main>
   );
 }

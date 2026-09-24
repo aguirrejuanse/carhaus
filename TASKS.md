@@ -17,6 +17,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | ✅ merged |
 | 8 | Notifications (Ph.9) | PR8 | PR7 | ✅ merged |
 | 9 | Templates (Ph.10) | PR9 | PR5 | open |
+| 10 | Email OTP verification + rider login (Ph.11) | PR10 | PR9 | open |
 
 ## Phase 1: Scaffold + Tooling
 - [x] 1.1 Init Next.js 15 App Router + TS + Tailwind 4, pnpm
@@ -74,3 +75,11 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 10.1 `app/api/templates/route.ts` POST+GET, rider-cookie auth (spec: Save Recurring Template, Session-Scoped Template Listing)
 - [x] 10.2 UI: save-as-template button + template list, one-click re-request (spec: Re-request Template)
 - [x] 10.3 Integration test: save, list scoped to cookie, re-request pre-fill
+
+## Phase 11: Rider Email Verification (OTP)
+- [x] 11.1 `verification_codes` table + migration — one active code per email, HMAC-hashed, 10 min TTL, max 5 attempts
+- [x] 11.2 `lib/email.ts` shared Resend sender (refactored out of notifications) + `lib/otp.ts` request/verify with resend cooldown
+- [x] 11.3 `POST /api/auth/otp` + `POST /api/auth/verify` — verify issues the `carhaus_rider` session (only issuer)
+- [x] 11.4 `POST /api/trips` requires the rider session — 401 anonymous; email no longer trusted from the request body
+- [x] 11.5 UI: shared `VerifyEmailForm`, booking 401 → code step → auto-resubmit, `/ingresar` page, header "Ingresar" link
+- [x] 11.6 Tests: otp hash/cooldown/attempts/expiry/cross-email, routes 200/401/422/429, trips 401 anonymous + 201 verified

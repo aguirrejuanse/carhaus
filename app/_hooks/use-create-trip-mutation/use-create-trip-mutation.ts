@@ -4,7 +4,6 @@
  *  confirmation page. */
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import {
   submitTripRequest,
   type TripExtrasInput,
@@ -12,19 +11,19 @@ import {
 } from "@/lib/services/booking";
 
 export interface CreateTripParams {
-  email: string;
   quoteToken?: string;
   legs: TripLegInput[];
   extras: TripExtrasInput;
 }
 
 export function useCreateTripMutation() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: (params: CreateTripParams) => submitTripRequest(params),
     onSuccess: ({ publicToken }) => {
-      router.push(`/trips/${publicToken}`);
+      // Full reload: a just-verified rider's header lives in the shared
+      // root layout, and refresh()+push() races the Router Cache — the
+      // anonymous "Ingresar" survives. Same precedent as LogoutButton.
+      window.location.assign(`/trips/${publicToken}`);
     },
   });
 }
