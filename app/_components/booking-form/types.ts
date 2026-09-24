@@ -1,32 +1,16 @@
-/** Types shared by the booking form hook, services, and subcomponents. */
+/** Types shared by the booking form hook and subcomponents. */
 
-export interface QuoteLeg {
-  sequence: 1 | 2;
-  origin: string;
-  destination: string;
-  scheduledAt: string;
-  priceCents: number;
-}
-
-export interface Preview {
-  token: string;
-  quote: { legs: QuoteLeg[]; totalPriceCents: number };
-}
-
-export interface FormState {
-  error?: string;
-  fields?: Record<string, string[]>;
-}
+/** Per-field validation errors from a `422` API response. */
+export type FieldErrors = Record<string, string[]> | undefined;
 
 export type PreviewStatus = "idle" | "loading" | "error";
 
-export interface TripLegInput {
+/** Pre-fill values from a saved template (spec: "Re-request Template" —
+ * dates are never pre-filled: a re-request always re-runs the preview). */
+export interface BookingInitial {
   origin: string;
   destination: string;
-  scheduledAt: string;
-}
-
-export interface TripExtrasInput {
+  roundTrip: boolean;
   snackChoice: string;
   spotifyPlaylistUrl?: string;
   acTemperatureCelsius?: number;

@@ -12,10 +12,15 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { FormState } from "./types";
+import type { FieldErrors } from "./types";
+
+const TRIP_MODE_OPTIONS = [
+  { value: false, label: "Solo ida" },
+  { value: true, label: "Ida y vuelta" },
+] as const;
 
 interface Props {
-  fields: FormState["fields"];
+  fields: FieldErrors;
   roundTrip: boolean;
   onRoundTripChange: (value: boolean) => void;
   onLegChange: () => void;
@@ -87,12 +92,7 @@ export function LegFields({
 
       <Field orientation="horizontal">
         <div className="inline-flex rounded-lg border border-border p-0.5">
-          {(
-            [
-              { value: false, label: "Solo ida" },
-              { value: true, label: "Ida y vuelta" },
-            ] as const
-          ).map((opt) => (
+          {TRIP_MODE_OPTIONS.map((opt) => (
             <button
               key={opt.label}
               type="button"
