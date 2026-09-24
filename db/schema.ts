@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -223,6 +224,20 @@ export const notifications = pgTable("notifications", {
     .notNull()
     .defaultNow(),
 });
+
+/** Brute-force cap on admin login — each attempt leaves a row; the route
+ *  429s an IP past the window limit (see app/api/admin/login). */
+export const adminLoginAttempts = pgTable(
+  "admin_login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ip: text("ip").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("admin_login_attempts_ip_idx").on(t.ip)],
+);
 
 /** One active code per email — the unique constraint enforces it (the
  *  upsert in db/queries.ts resets attempts on re-request). Codes are

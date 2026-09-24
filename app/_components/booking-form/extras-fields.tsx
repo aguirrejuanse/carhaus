@@ -73,6 +73,7 @@ export function ExtrasFields({
             type="number"
             min={16}
             max={30}
+            step={1}
             placeholder="22"
             defaultValue={initial?.acTemperatureCelsius}
           />
@@ -86,6 +87,9 @@ export function ExtrasFields({
           id="spotifyPlaylistUrl"
           name="spotifyPlaylistUrl"
           type="url"
+          pattern="https://.*\.spotify\.com/.*"
+          title="Pegá el link de tu playlist de Spotify"
+          maxLength={500}
           placeholder="https://open.spotify.com/playlist/..."
           defaultValue={initial?.spotifyPlaylistUrl}
         />

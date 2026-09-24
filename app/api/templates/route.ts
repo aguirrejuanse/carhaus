@@ -15,15 +15,11 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { createTemplate, listTemplatesByRiderEmail } from "@/db/queries";
-import { SNACK_CHOICE, TRIP_TYPE, type SnackChoice } from "@/db/schema";
+import { TRIP_TYPE } from "@/db/schema";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
+import { extrasSchema } from "@/lib/api/schemas";
 import { RIDER_COOKIE_NAME, riderFromCookieValue } from "@/lib/rider";
-
-const snackValues = Object.values(SNACK_CHOICE) as [
-  SnackChoice,
-  ...SnackChoice[],
-];
 
 const templateSchema = z.object({
   name: z.string().min(1).max(100),
@@ -32,19 +28,13 @@ const templateSchema = z.object({
   legs: z
     .array(
       z.object({
-        origin: z.string().min(1),
-        destination: z.string().min(1),
+        origin: z.string().min(1).max(200),
+        destination: z.string().min(1).max(200),
       }),
     )
     .min(1)
     .max(2),
-  extras: z
-    .object({
-      snackChoice: z.enum(snackValues).default(SNACK_CHOICE.NONE),
-      spotifyPlaylistUrl: z.url().optional(),
-      acTemperatureCelsius: z.number().int().min(16).max(30).optional(),
-    })
-    .default({ snackChoice: SNACK_CHOICE.NONE }),
+  extras: extrasSchema,
 });
 
 async function riderFromRequest(req: NextRequest) {

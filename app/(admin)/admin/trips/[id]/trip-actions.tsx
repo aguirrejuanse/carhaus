@@ -80,6 +80,7 @@ export function TripActions({
             id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            maxLength={500}
             placeholder="Ej. Sin disponibilidad en ese horario"
           />
         </Field>

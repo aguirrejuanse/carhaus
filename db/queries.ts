@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  adminLoginAttempts,
   admins,
   cars,
   drivers,
@@ -347,6 +348,31 @@ export async function markNotificationFailed(id: string, message: string) {
     .update(notifications)
     .set({ status: NOTIFICATION_STATUS.FAILED, errorMessage: message })
     .where(eq(notifications.id, id));
+}
+
+/** Admin login attempts from one IP inside `windowMs` — the brute-force
+ *  cap; each attempt (success or not) leaves a row. */
+export async function recordAdminLoginAttempt(ip: string) {
+  await db.insert(adminLoginAttempts).values({ ip });
+}
+
+export async function countRecentAdminLoginAttempts(
+  ip: string,
+  windowMs: number,
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(adminLoginAttempts)
+    .where(
+      and(
+        eq(adminLoginAttempts.ip, ip),
+        gt(
+          adminLoginAttempts.createdAt,
+          new Date(Date.now() - windowMs),
+        ),
+      ),
+    );
+  return row?.count ?? 0;
 }
 
 // Verification codes (email OTP) — one active code per email, enforced by

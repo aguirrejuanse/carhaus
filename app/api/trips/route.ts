@@ -20,7 +20,7 @@ import { createTripBooking, type NewBookingLeg } from "@/db/queries";
 import { TRIP_TYPE } from "@/db/schema";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
-import { extrasSchema, legSchema } from "@/lib/api/schemas";
+import { extrasSchema, legsSchema } from "@/lib/api/schemas";
 import { getEnv } from "@/lib/env";
 import { verifyQuote } from "@/lib/quote";
 import { RIDER_COOKIE_NAME, riderFromCookieValue } from "@/lib/rider";
@@ -31,7 +31,7 @@ const bookingSchema = z.object({
   quoteToken: z.string().optional(),
   /** Client echoes the legs it previewed; the signed quote is the source
    *  of truth for persisted distance/duration/price when present. */
-  legs: z.array(legSchema).min(1).max(2),
+  legs: legsSchema,
   extras: extrasSchema,
 });
 
