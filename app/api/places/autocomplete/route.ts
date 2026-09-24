@@ -20,12 +20,13 @@ const AUTOCOMPLETE_ENDPOINT =
   "https://places.googleapis.com/v1/places:autocomplete";
 
 /** Carhaus operates out of Mendoza — results are biased (not restricted)
- *  to a 200 km circle so local addresses outrank same-named CABA ones,
- *  while `includedRegionCodes` keeps everything inside Argentina. */
+ *  to the metro area (50 km is the API max) so local addresses outrank
+ *  same-named CABA ones, while `includedRegionCodes` keeps everything
+ *  inside Argentina. */
 const MENDOZA_BIAS = {
   circle: {
     center: { latitude: -32.8895, longitude: -68.8458 },
-    radius: 200_000,
+    radius: 50_000,
   },
 };
 

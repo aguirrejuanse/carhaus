@@ -32,6 +32,12 @@ export async function AppHeader() {
       </Link>
       {rider && (
         <div className="flex items-center gap-3 text-sm">
+          <Link
+            href="/viajes"
+            className="font-medium transition-colors duration-200 hover:text-muted-foreground"
+          >
+            Mis viajes
+          </Link>
           <span className="hidden text-muted-foreground sm:inline">
             {rider.email}
           </span>
