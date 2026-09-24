@@ -17,7 +17,11 @@ export function CodeField() {
         inputMode="numeric"
         autoComplete="one-time-code"
         placeholder="123456"
+        required
+        minLength={6}
         maxLength={6}
+        pattern="[0-9]{6}"
+        title="El código tiene 6 dígitos"
       />
       <FieldDescription>
         Te mandamos un código de 6 dígitos — vence en 10 minutos.
