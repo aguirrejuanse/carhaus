@@ -19,7 +19,8 @@ import { ApiError } from "@/lib/api/errors";
 import { useRequestOtpMutation } from "@/app/_hooks/use-request-otp-mutation";
 import { useVerifyOtpMutation } from "@/app/_hooks/use-verify-otp-mutation";
 
-const RESEND_SECONDS = 30;
+// Mirrors the server cooldown in lib/otp.ts.
+const RESEND_SECONDS = 60;
 
 interface Props {
   /** When set, the email is fixed (booking already collected it) and the

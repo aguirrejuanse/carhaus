@@ -51,7 +51,7 @@ export async function requestEmailCode(email: string): Promise<void> {
   }
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  await replaceVerificationCode({
+  const row = await replaceVerificationCode({
     email,
     codeHash: hashCode(email, code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS),
@@ -76,6 +76,9 @@ export async function requestEmailCode(email: string): Promise<void> {
 </body></html>`,
     });
   } catch (error) {
+    // A failed send must not leave a live row — it would lock the rider
+    // out for the cooldown with a code they never received.
+    if (row) await deleteVerificationCode(row.id).catch(() => {});
     throw new ApiError(
       503,
       "otp_send_failed",

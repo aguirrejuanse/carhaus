@@ -28,30 +28,37 @@ interface Props {
 
 export function BookingForm({ initial, riderEmail }: Props) {
   const form = useBookingForm(initial);
-
-  if (form.needsVerification && form.verificationEmail) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            Confirmá tu email
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Te mandamos un código para verificar que el email es tuyo. Tu
-            solicitud se envía en cuanto lo ingreses.
-          </p>
-        </div>
-        <VerifyEmailForm
-          email={form.verificationEmail}
-          onVerified={form.retryBooking}
-        />
-      </div>
-    );
-  }
+  const verifying = form.needsVerification && Boolean(form.verificationEmail);
 
   return (
-    <form ref={form.formRef} onSubmit={form.onSubmit} className="w-full">
-      <FieldGroup>
+    <div className="w-full">
+      {verifying && (
+        <div className="mb-8 flex flex-col gap-4 rounded-lg border border-border p-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">
+              Confirmá tu email
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Te mandamos un código para verificar que el email es tuyo. Tu
+              solicitud se envía en cuanto lo ingreses.
+            </p>
+          </div>
+          <VerifyEmailForm
+            email={form.verificationEmail}
+            onVerified={form.retryBooking}
+          />
+        </div>
+      )}
+
+      {/* hidden, not unmounted — if the post-verify retry fails (e.g. a
+          stale quote), the rider's inputs must survive. */}
+      <form
+        ref={form.formRef}
+        onSubmit={form.onSubmit}
+        hidden={verifying}
+        className="w-full"
+      >
+        <FieldGroup>
         <LegFields
           fields={form.fields}
           initial={initial}
@@ -81,7 +88,8 @@ export function BookingForm({ initial, riderEmail }: Props) {
         >
           {form.isPending ? "Enviando…" : "Pedir viaje"}
         </Button>
-      </FieldGroup>
-    </form>
+        </FieldGroup>
+      </form>
+    </div>
   );
 }
