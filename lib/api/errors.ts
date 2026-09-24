@@ -61,8 +61,12 @@ function errorResponse(
  */
 export function toErrorResponse(error: unknown): Response {
   if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      console.error(`[api] ${error.code}:`, error);
+    }
     return errorResponse(error.status, error.code, error.message, error.fields);
   }
 
+  console.error("[api] unhandled error:", error);
   return errorResponse(500, "internal_error", "Unexpected server error");
 }
