@@ -1,68 +1,60 @@
 "use client";
 
 /**
- * Booking form state machine: leg inputs → debounced price preview →
- * submit. The preview is re-quoted whenever the leg fields change; when
- * the distance provider is down the rider can still submit unpriced for
+ * Booking form orchestrator: leg inputs → debounced price preview →
+ * submit. Request state (pending/error/data) comes from the TanStack
+ * mutations — no hand-rolled status flags. When the distance provider is
+ * down the preview errors and the rider can still submit unpriced for
  * admin review (spec: "Distance Provider Failure Handling").
  */
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/errors";
-import { requestPricePreview, submitTripRequest } from "./services";
-import type {
-  FormState,
-  Preview,
-  PreviewStatus,
-  TripExtrasInput,
-  TripLegInput,
-} from "./types";
+import type { TripExtrasInput, TripLegInput } from "@/lib/services/booking";
+import { useCreateTripMutation } from "@/app/_hooks/use-create-trip-mutation";
+import { useTripPreviewMutation } from "@/app/_hooks/use-trip-preview-mutation";
+import type { BookingInitial } from "./types";
 
 const PREVIEW_DEBOUNCE_MS = 700;
 
-export function useBookingForm() {
-  const router = useRouter();
+export function useBookingForm(initial?: BookingInitial) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [roundTrip, setRoundTrip] = useState(false);
-  const [snackChoice, setSnackChoice] = useState<string>("none");
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("idle");
+  const [roundTrip, setRoundTrip] = useState(initial?.roundTrip ?? false);
+  const [snackChoice, setSnackChoice] = useState<string>(
+    initial?.snackChoice ?? "none",
+  );
   const [legsVersion, setLegsVersion] = useState(0);
   const bumpLegs = () => setLegsVersion((v) => v + 1);
+  const [validationError, setValidationError] = useState<string>();
 
-  const [state, formAction, isPending] = useActionState(
-    async (_prev: FormState, formData: FormData): Promise<FormState> => {
-      const legs = buildLegs(formData, roundTrip);
-      if (!legs) {
-        return { error: "Completá origen, destino y fechas del viaje." };
-      }
-      try {
-        const extras: TripExtrasInput = {
-          snackChoice,
-          spotifyPlaylistUrl:
-            String(formData.get("spotifyPlaylistUrl") ?? "") || undefined,
-          acTemperatureCelsius: formData.get("acTemperatureCelsius")
-            ? Number(formData.get("acTemperatureCelsius"))
-            : undefined,
-        };
-        const { publicToken } = await submitTripRequest({
-          email: String(formData.get("email") ?? ""),
-          quoteToken: preview?.token,
-          legs,
-          extras,
-        });
-        router.push(`/trips/${publicToken}`);
-        return {};
-      } catch (error) {
-        if (error instanceof ApiError) {
-          return { error: error.message, fields: error.fields };
-        }
-        return { error: "No pudimos enviar tu solicitud. Probá de nuevo." };
-      }
-    },
-    {},
-  );
+  const preview = useTripPreviewMutation();
+  const createTrip = useCreateTripMutation();
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const legs = buildLegs(formData, roundTrip);
+    if (!legs) {
+      setValidationError("Completá origen, destino y fechas del viaje.");
+      return;
+    }
+    setValidationError(undefined);
+
+    const extras: TripExtrasInput = {
+      snackChoice,
+      spotifyPlaylistUrl:
+        String(formData.get("spotifyPlaylistUrl") ?? "") || undefined,
+      acTemperatureCelsius: formData.get("acTemperatureCelsius")
+        ? Number(formData.get("acTemperatureCelsius"))
+        : undefined,
+    };
+    createTrip.mutate({
+      email: String(formData.get("email") ?? ""),
+      quoteToken: preview.data?.token,
+      legs,
+      extras,
+    });
+  };
 
   /** Debounced preview: re-quotes whenever the leg fields change. */
   useEffect(() => {
@@ -71,47 +63,39 @@ export function useBookingForm() {
 
     const legs = buildLegs(new FormData(form), roundTrip);
     if (!legs) {
-      setPreview(null);
-      setPreviewStatus("idle");
+      preview.reset();
       return;
     }
 
-    let cancelled = false;
-    setPreviewStatus("loading");
-    const timer = setTimeout(async () => {
-      try {
-        const data = await requestPricePreview(legs);
-        if (!cancelled) {
-          setPreview(data);
-          setPreviewStatus("idle");
-        }
-      } catch {
-        if (!cancelled) {
-          setPreview(null);
-          setPreviewStatus("error");
-        }
-      }
-    }, PREVIEW_DEBOUNCE_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => preview.mutate(legs), PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
     // formData values are read through the ref; the inputs bump this via
-    // onChange -> setLegsVersion.
-  }, [roundTrip, legsVersion]);
+    // onChange -> setLegsVersion. `preview` is a stable mutation object.
+  }, [roundTrip, legsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const apiError = createTrip.error instanceof ApiError ? createTrip.error : null;
 
   return {
     formRef,
-    formAction,
-    state,
-    isPending,
+    onSubmit,
+    isPending: createTrip.isPending,
+    error:
+      validationError ??
+      apiError?.message ??
+      (createTrip.isError
+        ? "No pudimos enviar tu solicitud. Probá de nuevo."
+        : undefined),
+    fields: apiError?.fields,
     roundTrip,
     setRoundTrip,
     snackChoice,
     setSnackChoice,
-    preview,
-    previewStatus,
+    preview: preview.data ?? null,
+    previewStatus: preview.isPending
+      ? ("loading" as const)
+      : preview.isError
+        ? ("error" as const)
+        : ("idle" as const),
     bumpLegs,
   };
 }

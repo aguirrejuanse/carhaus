@@ -1,13 +1,14 @@
 /** Price preview panel — loading / provider-down fallback / priced quote. */
 
 import { formatCents } from "@/lib/format";
-import type { Preview, PreviewStatus } from "./types";
+import type { PricePreview } from "@/lib/services/booking";
+import type { PreviewStatus } from "./types";
 
 export function PreviewPanel({
   preview,
   status,
 }: {
-  preview: Preview | null;
+  preview: PricePreview | null;
   status: PreviewStatus;
 }) {
   if (status === "loading") {

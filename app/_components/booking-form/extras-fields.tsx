@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SNACK_LABELS } from "@/lib/labels";
-import type { FormState } from "./types";
+import type { FieldErrors } from "./types";
 
 const SNACK_OPTIONS = Object.entries(SNACK_LABELS).map(([value, label]) => ({
   value,
@@ -26,7 +26,7 @@ const SNACK_OPTIONS = Object.entries(SNACK_LABELS).map(([value, label]) => ({
 }));
 
 interface Props {
-  fields: FormState["fields"];
+  fields: FieldErrors;
   snackChoice: string;
   onSnackChange: (value: string) => void;
 }
