@@ -7,6 +7,7 @@ import {
   drivers,
   notifications,
   pricingRules,
+  TRIP_TYPE,
   tripExtras,
   tripLegs,
   trips,
@@ -46,14 +47,27 @@ export async function getActivePricingRules(): Promise<PricingRules> {
 /**
  * Email-keyed identity (spec: "Email-Keyed Identity") — find-or-create by
  * email, never duplicates a returning rider. `onConflictDoUpdate` with a
- * no-op set keeps this a single round-trip that always returns the row.
+ * no-op set keeps this a single round-trip that always returns the row —
+ * it is also what makes concurrent bookings with the same email safe
+ * (the unique index serializes them; one wins the insert, the other
+ * updates the same row).
  */
 export async function upsertUserByEmail(email: string) {
+  // Case/whitespace-insensitive identity: "A@x.com" and "a@x.com " are the
+  // same rider — normalizing here prevents duplicate user rows.
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) {
+    throw new ApiError(422, "email_required", "A rider email is required");
+  }
+
   const [user] = await db
     .insert(users)
-    .values({ email })
-    .onConflictDoUpdate({ target: users.email, set: { email } })
+    .values({ email: normalized })
+    .onConflictDoUpdate({ target: users.email, set: { email: normalized } })
     .returning();
+  if (!user) {
+    throw new ApiError(500, "user_upsert_failed", "Could not resolve rider");
+  }
   return user;
 }
 
@@ -86,6 +100,20 @@ export async function createTripBooking(input: {
   legs: NewBookingLeg[];
   extras: NewBookingExtras;
 }): Promise<{ id: string; publicToken: string }> {
+  // Domain invariants — a violation here is a server bug, not bad input
+  // (callers already ran the Zod contract), so these are 500s.
+  if (input.legs.length < 1 || input.legs.length > 2) {
+    throw new ApiError(500, "invalid_legs", "A booking needs 1 or 2 legs");
+  }
+  const expectsRoundTrip = input.legs.length === 2;
+  if ((input.tripType === TRIP_TYPE.ROUND_TRIP) !== expectsRoundTrip) {
+    throw new ApiError(
+      500,
+      "trip_type_mismatch",
+      "tripType does not match the number of legs",
+    );
+  }
+
   const tripId = crypto.randomUUID();
 
   const [tripRows] = await db.batch([
@@ -104,7 +132,11 @@ export async function createTripBooking(input: {
     db.insert(tripExtras).values({ tripId, ...input.extras }),
   ]);
 
-  return { id: tripId, publicToken: tripRows[0].publicToken };
+  const trip = tripRows[0];
+  if (!trip) {
+    throw new ApiError(500, "trip_insert_failed", "Trip was not persisted");
+  }
+  return { id: tripId, publicToken: trip.publicToken };
 }
 
 /** Admin login lookup — the only place `passwordHash` is read. */
@@ -228,6 +260,7 @@ export async function rejectTrip(input: { tripId: string; reason?: string }) {
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
 export async function getTripByPublicToken(token: string) {
+  if (!token) return undefined;
   return await db.query.trips.findFirst({
     where: eq(trips.publicToken, token),
     with: {
