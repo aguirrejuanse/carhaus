@@ -16,7 +16,7 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 | 6 | Admin login (Ph.7) | PR6 | PR3 | open |
 | 7 | Admin approval route + UI (Ph.8) | PR7 | PR5, PR6 | open |
 | 8 | Notifications (Ph.9) | PR8 | PR7 | open |
-| 9 | Templates (Ph.10) | PR9 | PR5 | pending |
+| 9 | Templates (Ph.10) | PR9 | PR5 | open |
 
 ## Phase 1: Scaffold + Tooling
 - [x] 1.1 Init Next.js 15 App Router + TS + Tailwind 4, pnpm
@@ -71,6 +71,6 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 9.3 Surface wa.me link in confirmation + admin UI (spec: WhatsApp Deep Link)
 
 ## Phase 10: Templates
-- [ ] 10.1 `app/api/templates/route.ts` POST+GET, rider-cookie auth (spec: Save Recurring Template, Session-Scoped Template Listing)
-- [ ] 10.2 UI: save-as-template button + template list, one-click re-request (spec: Re-request Template)
-- [ ] 10.3 Integration test: save, list scoped to cookie, re-request pre-fill
+- [x] 10.1 `app/api/templates/route.ts` POST+GET, rider-cookie auth (spec: Save Recurring Template, Session-Scoped Template Listing)
+- [x] 10.2 UI: save-as-template button + template list, one-click re-request (spec: Re-request Template)
+- [x] 10.3 Integration test: save, list scoped to cookie, re-request pre-fill
