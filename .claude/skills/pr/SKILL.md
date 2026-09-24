@@ -40,7 +40,8 @@ Always end the PR body with the session attribution line from the system reminde
 
 ## Notes specific to this project
 
-- Delivery strategy: chained PRs, `stacked-to-main` — every PR's base is `main`, none target another PR's branch.
+- Delivery strategy: chained PRs, `stacked-to-main` — every PR's base is `main`, none target another PR's branch. Iterate only on the PR under review; if it builds on unmerged work, rebase/merge onto `main` once the parent lands instead of propagating per change.
+- **After ANY merge or conflict resolution** (rebases onto main, upstream merges), before committing: `rg '<<<<<<<'` across the tree (markers can slip through when an edit starts mid-conflict) and `pnpm tsc --noEmit` (catches signature drift between branches). A stray `<<<<<<< HEAD` shipped once and broke a branch's typecheck.
 - If `sdd-verify` ran for the change behind this PR, summarize its verdict (PASS/WARNINGS/CRITICAL count) in the PR body's Overview section.
 - Don't include unrelated untracked files (e.g. `.atl/`, `logo.jpg`) unless the PR is specifically about them.
 - After the PR is created (or its body updated), tick off the corresponding items in `TASKS.md` on the branch and include that change in the same push — this is the project's task tracker, there is no GitHub Issues/Projects board.
