@@ -19,26 +19,36 @@ export function useEmailVerification(
 ) {
   const requestOtp = useRequestOtpMutation();
   const verify = useVerifyOtpMutation();
+  const [resendEndsAt, setResendEndsAt] = useState<number | null>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [enteredEmail, setEnteredEmail] = useState("");
   const requestedFor = useRef<string | undefined>(undefined);
   const targetEmail = lockedEmail ?? enteredEmail;
 
+  // Deadline-based: each tick derives the remaining time from the clock,
+  // so a throttled interval (backgrounded tab) can't lag behind the real
+  // cooldown — the next tick just shows the true remaining seconds.
   const countdownActive = resendSeconds > 0;
   useEffect(() => {
-    if (!countdownActive) return;
+    if (!countdownActive || resendEndsAt === null) return;
     const timer = setInterval(
-      () => setResendSeconds((s) => Math.max(0, s - 1)),
+      () =>
+        setResendSeconds(
+          Math.max(0, Math.ceil((resendEndsAt - Date.now()) / 1000)),
+        ),
       1000,
     );
     return () => clearInterval(timer);
-  }, [countdownActive]);
+  }, [countdownActive, resendEndsAt]);
 
   const sendCode = (target: string) => {
     if (!target || requestOtp.isPending) return;
     requestedFor.current = target;
     requestOtp.mutate(target, {
-      onSuccess: () => setResendSeconds(RESEND_SECONDS),
+      onSuccess: () => {
+        setResendEndsAt(Date.now() + RESEND_SECONDS * 1000);
+        setResendSeconds(RESEND_SECONDS);
+      },
     });
   };
 
