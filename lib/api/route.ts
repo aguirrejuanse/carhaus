@@ -21,7 +21,7 @@ export interface MutationRouteOptions<TBody, TCtx> {
 
 export function mutationRoute<TBody, TCtx = unknown>(
   opts: MutationRouteOptions<TBody, TCtx>,
-): (req: NextRequest, ctx: TCtx) => Promise<Response> {
+): (req: NextRequest, ctx?: TCtx) => Promise<Response> {
   return async (req, ctx) => {
     try {
       assertSameOrigin(req);
@@ -32,7 +32,9 @@ export function mutationRoute<TBody, TCtx = unknown>(
 
       const input = await parseBody(req, opts.schema);
 
-      return await opts.handler(input, req, ctx);
+      // Next always passes ctx for dynamic routes; unit tests call handlers
+      // without a route context, so the outer param is optional.
+      return await opts.handler(input, req, ctx as TCtx);
     } catch (error) {
       return toErrorResponse(error);
     }

@@ -38,6 +38,13 @@ export function riderSessionCookie(token: string): string {
   }`;
 }
 
+/** `Set-Cookie` header value that expires the rider session immediately. */
+export function clearRiderSessionCookie(): string {
+  return `${RIDER_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${
+    process.env.NODE_ENV === "production" ? "; Secure" : ""
+  }`;
+}
+
 /**
  * Returns the rider's `userId` for a valid cookie value, or `null` for any
  * absent/expired/tampered/malformed token. Not finding a session is a
@@ -63,7 +70,8 @@ export interface RiderSession {
 /**
  * Resolves a raw `carhaus_rider` cookie value to the rider's identity
  * (userId + email — templates are keyed by email per the schema). `null`
- * for absent/invalid/expired tokens or a deleted user.
+ * for absent/invalid/expired tokens or a deleted user — anonymous is a
+ * normal state, not an error.
  */
 export async function riderFromCookieValue(
   token: string | undefined,

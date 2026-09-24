@@ -297,7 +297,7 @@ export async function markNotificationFailed(id: string, message: string) {
     .where(eq(notifications.id, id));
 }
 
-/** Rider identity resolution — the `carhaus_rider` cookie stores userId. */
+/** Rider-session lookup: the `carhaus_rider` JWT carries only `userId`. */
 export async function getUserById(id: string) {
   const [user] = await db
     .select()
@@ -334,6 +334,30 @@ export async function createTemplate(input: {
     .values(input)
     .returning();
   return template;
+}
+
+/**
+ * Rider's own trips for the confirmation page ("Tus viajes") — latest
+ * first, joined to leg 1 so each row can show origin → destination.
+ */
+export async function getTripsByUserId(userId: string) {
+  return await db
+    .select({
+      publicToken: trips.publicToken,
+      status: trips.status,
+      createdAt: trips.createdAt,
+      totalPriceCents: trips.totalPriceCents,
+      origin: tripLegs.origin,
+      destination: tripLegs.destination,
+    })
+    .from(trips)
+    .leftJoin(
+      tripLegs,
+      and(eq(tripLegs.tripId, trips.id), eq(tripLegs.sequence, 1)),
+    )
+    .where(eq(trips.userId, userId))
+    .orderBy(desc(trips.createdAt))
+    .limit(10);
 }
 
 /** Public confirmation page lookup (design decision #8: unguessable link). */
