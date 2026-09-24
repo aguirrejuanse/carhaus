@@ -10,6 +10,8 @@
  * in the MVP (spec Non-Goals).
  */
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { Resend } from "resend";
 import {
   getPendingEmailNotification,
@@ -186,9 +188,31 @@ function rejectedRows(trip: TripContactInfo): string[] {
   return rows;
 }
 
-function resolutionEmailHtml(trip: TripContactInfo): string {
+/**
+ * Logo bytes for the inline (CID) attachment — email clients can't fetch
+ * images from Deployment-Protected previews, so the logo travels inside
+ * the email. Falls back to the public URL when the file isn't bundled
+ * (e.g. missing from function tracing).
+ */
+let logoBase64: string | null | undefined;
+function logoAttachment(): string | null {
+  if (logoBase64 === undefined) {
+    try {
+      logoBase64 = readFileSync(
+        path.join(process.cwd(), "public", "logo-header.png"),
+      ).toString("base64");
+    } catch {
+      logoBase64 = null;
+    }
+  }
+  return logoBase64;
+}
+
+function resolutionEmailHtml(
+  trip: TripContactInfo,
+  logoSrc: string,
+): string {
   const status = EMAIL_STATUS[trip.status];
-  const logoUrl = `${getEnv().APP_ORIGIN}/logo-header.png`;
   const rows =
     trip.status === "approved" ? approvedRows(trip) : rejectedRows(trip);
 
@@ -209,7 +233,7 @@ function resolutionEmailHtml(trip: TripContactInfo): string {
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden">
         <tr><td align="center" style="background:#1E1B4B;padding:24px">
-          <img src="${esc(logoUrl)}" alt="Carhaus" width="140" style="display:block;border:0" />
+          <img src="${esc(logoSrc)}" alt="Carhaus" width="140" style="display:block;border:0" />
         </td></tr>
         <tr><td style="padding:32px 32px 8px">
           <p style="margin:0 0 4px;color:${status.accent};font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">${status.eyebrow}</p>
@@ -240,13 +264,19 @@ async function sendResolutionEmail(
     throw new Error("RESEND_API_KEY is not configured");
   }
 
+  const logo = logoAttachment();
+  const logoSrc = logo ? "cid:logo" : `${env.APP_ORIGIN}/logo-header.png`;
+
   const resend = new Resend(env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: env.RESEND_FROM ?? "Carhaus <onboarding@resend.dev>",
     to,
     subject: status.subject,
     text: resolutionEmailText(trip),
-    html: resolutionEmailHtml(trip),
+    html: resolutionEmailHtml(trip, logoSrc),
+    attachments: logo
+      ? [{ filename: "logo-header.png", content: logo, contentId: "logo" }]
+      : undefined,
   });
 
   if (error) {
