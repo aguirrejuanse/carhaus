@@ -9,6 +9,10 @@
  */
 
 import { useState } from "react";
+import {
+  startDemoTour,
+  useDemoTour,
+} from "@/app/_hooks/use-demo-tour";
 import { useTemplatesQuery } from "@/app/_hooks/use-templates-query";
 import type { TemplateItem } from "@/lib/services/templates";
 import { BookingForm, type BookingInitial } from "./booking-form";
@@ -27,6 +31,7 @@ export function BookingSection({
     useTemplatesQuery(initialTemplates);
   const [initial, setInitial] = useState<BookingInitial | undefined>();
   const [formKey, setFormKey] = useState(0);
+  useDemoTour();
 
   const applyTemplate = (template: TemplateItem) => {
     setInitial({
@@ -42,16 +47,27 @@ export function BookingSection({
 
   return (
     <div className="flex w-full flex-col gap-10">
-      <TemplateList
-        templates={templates}
-        isLoading={isPending}
-        onApply={applyTemplate}
-      />
+      {/* Same rule as the preview step — highlight only when the list
+          actually has templates. */}
+      <div data-tour={templates.length > 0 ? "templates" : undefined}>
+        <TemplateList
+          templates={templates}
+          isLoading={isPending}
+          onApply={applyTemplate}
+        />
+      </div>
       {/* Keyed wrapper remounts on template apply — the fade keeps the
           swap from feeling like a hard cut. */}
       <div key={formKey} className="animate-in fade-in duration-300">
         <BookingForm initial={initial} riderEmail={riderEmail} />
       </div>
+      <button
+        type="button"
+        onClick={startDemoTour}
+        className="cursor-pointer self-center text-sm text-muted-foreground underline-offset-2 hover:underline"
+      >
+        ¿Cómo funciona?
+      </button>
     </div>
   );
 }

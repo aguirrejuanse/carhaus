@@ -20,9 +20,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.APP_ORIGIN ??
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000"),
+  ),
   title: "Carhaus — Viajes privados a tu medida",
   description:
     "Reservá tu viaje privado con Carhaus: elegí snacks, tu playlist y la temperatura del aire. Sin comisiones de intermediarios.",
+  openGraph: {
+    title: "Carhaus — Viajes privados a tu medida",
+    description:
+      "Reservá tu viaje privado con Carhaus: elegí snacks, tu playlist y la temperatura del aire.",
+    images: ["/logo-header.png"],
+  },
 };
 
 export default function RootLayout({

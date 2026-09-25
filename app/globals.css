@@ -127,3 +127,55 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+/* driver.js freezes the whole page while a tour runs
+   (`.driver-active * { pointer-events:none }`) and dims it under an
+   svg overlay at z-index 10000 — portaled popups would render under
+   the dim and reject clicks. `.tour-lift` re-enables and raises them
+   so the user can keep interacting with the highlighted step. */
+.driver-active .tour-lift,
+.driver-active .tour-lift * {
+  pointer-events: auto;
+}
+.driver-active .tour-lift {
+  z-index: 10001;
+}
+/* driver.js popover — navy card so it reads against the light page. */
+.driver-popover.carhaus-tour {
+  background-color: #1e1b4b;
+  color: #fff;
+  border-radius: 12px;
+}
+.driver-popover.carhaus-tour .driver-popover-title {
+  color: #fff;
+}
+.driver-popover.carhaus-tour .driver-popover-description {
+  color: rgb(255 255 255 / 0.75);
+}
+.driver-popover.carhaus-tour .driver-popover-progress-text,
+.driver-popover.carhaus-tour .driver-popover-close-btn {
+  color: rgb(255 255 255 / 0.6);
+}
+.driver-popover.carhaus-tour .driver-popover-next-btn {
+  background-color: #f5c518;
+  color: #1e1b4b;
+  border: none;
+  text-shadow: none;
+}
+.driver-popover.carhaus-tour .driver-popover-prev-btn {
+  color: rgb(255 255 255 / 0.8);
+  background: transparent;
+  border: none;
+  text-shadow: none;
+}
+.driver-popover.carhaus-tour .driver-popover-arrow-side-left {
+  border-left-color: #1e1b4b;
+}
+.driver-popover.carhaus-tour .driver-popover-arrow-side-right {
+  border-right-color: #1e1b4b;
+}
+.driver-popover.carhaus-tour .driver-popover-arrow-side-top {
+  border-top-color: #1e1b4b;
+}
+.driver-popover.carhaus-tour .driver-popover-arrow-side-bottom {
+  border-bottom-color: #1e1b4b;
+}

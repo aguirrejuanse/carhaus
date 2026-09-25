@@ -22,9 +22,14 @@ export default async function RiderTripsPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-10 sm:py-14">
       <section className="flex flex-col gap-4">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">
-          Mis viajes
-        </h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-heading text-3xl font-bold tracking-tight">
+            Mis viajes
+          </h1>
+          {rider && trips.length > 0 && (
+            <Button render={<Link href="/" />}>Nuevo viaje</Button>
+          )}
+        </div>
         {rider && trips.length > 0 ? (
           <TripList trips={trips} />
         ) : (

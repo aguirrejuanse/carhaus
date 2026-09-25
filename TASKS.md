@@ -83,3 +83,9 @@ Delivery: chained PRs, stacked-to-main (each PR targets `main`).
 - [x] 11.4 `POST /api/trips` requires the rider session — 401 anonymous; email no longer trusted from the request body
 - [x] 11.5 UI: shared `VerifyEmailForm`, booking 401 → code step → auto-resubmit, `/ingresar` page, header "Ingresar" link
 - [x] 11.6 Tests: otp hash/cooldown/attempts/expiry/cross-email, routes 200/401/422/429, trips 401 anonymous + 201 verified
+
+## Phase 12: Demo Readiness
+- [x] 12.1 driver.js guided tour (`useDemoTour` + `data-tour` attrs) — auto-runs once, "¿Cómo funciona?" replays it
+- [x] 12.2 `not-found.tsx` + `error.tsx` branded pages
+- [x] 12.3 `metadataBase` + OpenGraph on the root layout
+- [x] 12.4 `admin_login_attempts` per-IP cap on admin login
