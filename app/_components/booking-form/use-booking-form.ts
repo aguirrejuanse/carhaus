@@ -20,9 +20,20 @@ import type { BookingInitial } from "./types";
 
 const PREVIEW_DEBOUNCE_MS = 700;
 
+/**
+ * "Ahora" sends now+ASAP_LEAD_MS as the departure — `scheduledAt` is NOT
+ * NULL and pricing needs a real timestamp (night multiplier), so the
+ * trip enters the admin queue as a normal near-future booking.
+ * Tradeoff: the admin sees a regular time, not an "ASAP" flag — if that
+ * distinction is ever needed it's additive (nullable column + display),
+ * this flow doesn't have to change.
+ */
+export const ASAP_LEAD_MS = 45 * 60 * 1000;
+
 export function useBookingForm(initial?: BookingInitial) {
   const formRef = useRef<HTMLFormElement>(null);
   const [roundTrip, setRoundTrip] = useState(initial?.roundTrip ?? false);
+  const [departNow, setDepartNow] = useState(true);
   const [snackChoice, setSnackChoice] = useState<string>(
     initial?.snackChoice ?? "none",
   );
@@ -43,7 +54,7 @@ export function useBookingForm(initial?: BookingInitial) {
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const legs = buildLegs(formData, roundTrip);
+    const legs = buildLegs(formData, roundTrip, departNow);
     if (!legs) {
       setValidationError("Completá origen, destino y fechas del viaje.");
       return;
@@ -83,7 +94,7 @@ export function useBookingForm(initial?: BookingInitial) {
     const form = formRef.current;
     if (!form) return;
 
-    const legs = buildLegs(new FormData(form), roundTrip);
+    const legs = buildLegs(new FormData(form), roundTrip, departNow);
     if (!legs) {
       preview.reset();
       return;
@@ -93,7 +104,7 @@ export function useBookingForm(initial?: BookingInitial) {
     return () => clearTimeout(timer);
     // formData values are read through the ref; the inputs bump this via
     // onChange -> setLegsVersion. `preview` is a stable mutation object.
-  }, [roundTrip, legsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roundTrip, departNow, legsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const apiError = createTrip.error instanceof ApiError ? createTrip.error : null;
   const needsVerification = pending !== null && apiError?.status === 401;
@@ -114,6 +125,8 @@ export function useBookingForm(initial?: BookingInitial) {
     fields: apiError?.fields,
     roundTrip,
     setRoundTrip,
+    departNow,
+    setDepartNow,
     snackChoice,
     setSnackChoice,
     preview: preview.data ?? null,
@@ -131,11 +144,12 @@ export function useBookingForm(initial?: BookingInitial) {
 function buildLegs(
   formData: FormData,
   roundTrip: boolean,
+  departNow: boolean,
 ): TripLegInput[] | null {
   const origin = String(formData.get("origin") ?? "").trim();
   const destination = String(formData.get("destination") ?? "").trim();
   const departAt = String(formData.get("departAt") ?? "");
-  if (!origin || !destination || !departAt) return null;
+  if (!origin || !destination || (!departNow && !departAt)) return null;
 
   // place_ids picked from autocomplete — the round-trip leg swaps them
   // along with the addresses.
@@ -148,7 +162,9 @@ function buildLegs(
     {
       origin,
       destination,
-      scheduledAt: new Date(departAt).toISOString(),
+      scheduledAt: departNow
+        ? new Date(Date.now() + ASAP_LEAD_MS).toISOString()
+        : new Date(departAt).toISOString(),
       originPlaceId,
       destinationPlaceId,
     },
