@@ -3,8 +3,8 @@
 /**
  * First-visit guided tour (driver.js) — runs once per browser via
  * localStorage, with `startDemoTour` exported for a manual replay.
- * Steps highlight `data-tour` attributes; a step whose element isn't
- * rendered (e.g. templates for anonymous riders) shows centered.
+ * Steps highlight `data-tour` attributes; steps whose element isn't
+ * rendered (empty preview, no templates, logged-in header) are skipped.
  */
 
 import { useEffect } from "react";
@@ -71,12 +71,19 @@ const steps: DriveStep[] = [
 ];
 
 export function startDemoTour() {
+  // Skip steps whose element isn't rendered (empty preview, no
+  // templates) — a centered popover for a missing target reads as noise.
+  const present = steps.filter(
+    (step) =>
+      typeof step.element !== "string" ||
+      document.querySelector(step.element),
+  );
   driver({
     showProgress: true,
     nextBtnText: "Siguiente",
     prevBtnText: "Atrás",
     doneBtnText: "Listo",
-    steps,
+    steps: present,
   }).drive();
 }
 
