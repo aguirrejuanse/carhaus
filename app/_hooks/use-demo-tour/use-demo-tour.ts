@@ -82,6 +82,7 @@ export function startDemoTour() {
   // still grow (the round-trip toggle mounts the return input inside the
   // same wrapper), so we refresh on any subtree mutation.
   let observer: MutationObserver | undefined;
+  let activeElement: Element | undefined;
   const d = driver({
     showProgress: true,
     popoverClass: "carhaus-tour",
@@ -91,6 +92,7 @@ export function startDemoTour() {
     steps: present,
     onHighlightStarted: (element) => {
       observer?.disconnect();
+      activeElement = element;
       if (!element) return;
       observer = new MutationObserver(() => d.refresh());
       observer.observe(element, { childList: true, subtree: true });
@@ -102,13 +104,15 @@ export function startDemoTour() {
     },
   });
 
-  // Portaled UI (place suggestions, selects) renders under the tour
-  // overlay — any pointerdown outside the popover dismisses the tour,
-  // so the next click reaches the element instead of dead-ending.
+  // Dismiss on clicks outside the popover AND outside the highlighted
+  // element — typing into a highlighted field must not kill the tour,
+  // but a click on the dimmed page (or on portaled UI trapped under the
+  // overlay) should hand control back instead of dead-ending.
   const dismiss = (event: PointerEvent) => {
-    if (!(event.target as Element).closest?.(".driver-popover")) {
-      d.destroy();
-    }
+    const target = event.target as Element;
+    if (target.closest?.(".driver-popover")) return;
+    if (activeElement?.contains(target)) return;
+    d.destroy();
   };
   document.addEventListener("pointerdown", dismiss);
 
