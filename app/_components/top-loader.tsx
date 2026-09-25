@@ -1,28 +1,28 @@
 "use client";
 
 /**
- * NProgress-style top bar. Active while a client navigation is in
- * flight (internal link click or back/forward until the URL commits)
- * or any TanStack query/mutation is fetching. The bar creeps toward
- * ~90% while busy and completes on settle — an aborted navigation
- * self-clears via a failsafe so it can't pin forever.
+ * Page-transition feedback — thin top bar immediately, plus a pulsing
+ * logo overlay if the navigation outlasts LOGO_DELAY_MS (fast prefetched
+ * navs never flash it). Only page transitions trigger it; in-page async
+ * (preview, submit, OTP) has its own inline loading states. An aborted
+ * navigation self-clears via the failsafe so the bar can't pin forever.
  */
 
-import { useIsFetching, useIsMutating } from "@tanstack/react-query";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const NAV_FAILSAFE_MS = 10_000;
+const LOGO_DELAY_MS = 200;
 
 export function TopLoader() {
   const pathname = usePathname();
   const location = `${pathname}?${useSearchParams().toString()}`;
-  const fetching = useIsFetching();
-  const mutating = useIsMutating();
 
   const [navPending, setNavPending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [showLogo, setShowLogo] = useState(false);
 
   // Start on internal link click or history back/forward. A click whose
   // target keeps the same path+search (hash-only jump) isn't a nav.
@@ -76,10 +76,19 @@ export function TopLoader() {
     return () => clearTimeout(timer);
   }, [navPending]);
 
-  const busy = navPending || fetching + mutating > 0;
+  // The logo only earns the overlay after the delay — quicker
+  // transitions just get the bar.
+  useEffect(() => {
+    if (!navPending) {
+      setShowLogo(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowLogo(true), LOGO_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [navPending]);
 
   useEffect(() => {
-    if (busy) {
+    if (navPending) {
       setVisible(true);
       setProgress((p) => (p <= 0 ? 15 : p));
       const timer = setInterval(() => {
@@ -94,18 +103,34 @@ export function TopLoader() {
       setProgress(0);
     }, 300);
     return () => clearTimeout(timer);
-  }, [busy, visible]);
+  }, [navPending, visible]);
 
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 transition-opacity duration-300"
-      style={{ opacity: visible ? 1 : 0 }}
-    >
+    <>
       <div
-        className="h-full bg-primary transition-[width] duration-200 ease-out"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
+      >
+        <div
+          className="h-full bg-primary transition-[width] duration-200 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed inset-0 z-40 grid place-items-center bg-background/70 backdrop-blur-[2px] transition-opacity duration-200 ${
+          showLogo ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <Image
+          src="/logo-header.png"
+          alt=""
+          width={140}
+          height={60}
+          className="animate-pulse"
+        />
+      </div>
+    </>
   );
 }
