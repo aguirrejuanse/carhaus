@@ -15,8 +15,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { toDateTimeInputValue } from "@/lib/format";
 import { PlaceInput } from "./place-input";
+import { SegmentedControl } from "./segmented-control";
 import { TripModeToggle } from "./trip-mode-toggle";
+import { ASAP_LEAD_MS } from "./use-booking-form";
 import type { BookingInitial, FieldErrors } from "./types";
+
+const DEPART_MODE_OPTIONS = [
+  { value: true, label: "Ahora" },
+  { value: false, label: "Programar" },
+] as const;
 
 interface Props {
   fields: FieldErrors;
@@ -26,6 +33,9 @@ interface Props {
   riderEmail?: string;
   roundTrip: boolean;
   onRoundTripChange: (value: boolean) => void;
+  /** "Ahora" mode — no datetime input; the form sends now+ASAP_LEAD_MS. */
+  departNow: boolean;
+  onDepartNowChange: (value: boolean) => void;
   onLegChange: () => void;
 }
 
@@ -35,10 +45,17 @@ export function LegFields({
   riderEmail,
   roundTrip,
   onRoundTripChange,
+  departNow,
+  onDepartNowChange,
   onLegChange,
 }: Props) {
   const [departAt, setDepartAt] = useState("");
   const minNow = toDateTimeInputValue(new Date());
+  // ASAP departure leaves as soon as the buffer allows — the return leg
+  // can't be earlier than that.
+  const minReturn = departNow
+    ? toDateTimeInputValue(new Date(Date.now() + ASAP_LEAD_MS))
+    : departAt || minNow;
 
   return (
     <FieldSet>
@@ -89,18 +106,36 @@ export function LegFields({
       </div>
 
       <Field data-invalid={Boolean(fields?.["legs.0.scheduledAt"])}>
-        <FieldLabel htmlFor="departAt">Fecha y hora de ida</FieldLabel>
+        <div className="flex items-center justify-between gap-3">
+          <FieldLabel htmlFor="departAt">Salida</FieldLabel>
+          <SegmentedControl
+            options={DEPART_MODE_OPTIONS}
+            value={departNow}
+            onChange={onDepartNowChange}
+          />
+        </div>
+        {/* hidden, not unmounted — keeps the label association and the
+            value if the rider flips back to "Programar". Not required
+            while hidden, or browser validation would block the submit
+            on a control the user can't see. */}
         <Input
           id="departAt"
           name="departAt"
           type="datetime-local"
-          required
+          required={!departNow}
+          hidden={departNow}
           min={minNow}
           onChange={(event) => {
             setDepartAt(event.target.value);
             onLegChange();
           }}
         />
+        {departNow && (
+          <FieldDescription>
+            Salida lo antes posible — te confirmamos la hora exacta por
+            email.
+          </FieldDescription>
+        )}
         <FieldError>{fields?.["legs.0.scheduledAt"]?.[0]}</FieldError>
       </Field>
 
@@ -119,7 +154,7 @@ export function LegFields({
             name="returnAt"
             type="datetime-local"
             required={roundTrip}
-            min={departAt || minNow}
+            min={minReturn}
             onChange={onLegChange}
           />
           <FieldDescription>

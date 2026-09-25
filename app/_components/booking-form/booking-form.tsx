@@ -66,6 +66,8 @@ export function BookingForm({ initial, riderEmail }: Props) {
             riderEmail={riderEmail}
             roundTrip={form.roundTrip}
             onRoundTripChange={form.setRoundTrip}
+            departNow={form.departNow}
+            onDepartNowChange={form.setDepartNow}
             onLegChange={form.bumpLegs}
           />
         </div>

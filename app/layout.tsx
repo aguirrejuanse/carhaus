@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Outfit, Work_Sans } from "next/font/google";
+import { Suspense } from "react";
 import { AppHeader } from "./_components/app-header";
+import { TopLoader } from "./_components/top-loader";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -48,6 +50,11 @@ export default function RootLayout({
         className={`${workSans.variable} ${outfit.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          {/* useSearchParams inside TopLoader needs a Suspense boundary
+              or every page bails out of static rendering. */}
+          <Suspense fallback={null}>
+            <TopLoader />
+          </Suspense>
           <header className="mx-auto w-full max-w-2xl px-6 pt-6">
             <AppHeader />
           </header>

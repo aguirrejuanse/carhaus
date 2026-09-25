@@ -1,19 +1,20 @@
-/** Colored status chip — amber for pending, emerald for approved, red for
- *  rejected. Shared by rider views (`/viajes`, confirmation) and admin
- *  detail so the status reads the same everywhere. */
+/** Colored status chip — brand navy for pending ("with us", not a
+ *  warning), emerald for approved, red for rejected. Shared by rider
+ *  views (`/viajes`, confirmation) and admin detail so the status reads
+ *  the same everywhere. */
 
 import { TRIP_STATUS_LABELS } from "@/lib/labels";
 import { cn } from "cn";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800",
+  pending: "bg-primary/10 text-primary",
   approved: "bg-emerald-100 text-emerald-800",
   rejected: "bg-red-100 text-red-800",
 };
 
 /** Text-only variant for large headlines (confirmation page h1). */
 export const STATUS_TEXT_STYLES: Record<string, string> = {
-  pending: "text-amber-600",
+  pending: "text-primary",
   approved: "text-emerald-700",
   rejected: "text-red-700",
 };

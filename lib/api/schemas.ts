@@ -16,6 +16,10 @@ const snackValues = Object.values(SNACK_CHOICE) as [
 const MAX_PLACE_TEXT = 200;
 /** Bookings can't be for the past, and a year out is generous enough. */
 const MAX_BOOKING_HORIZON_MS = 366 * 24 * 60 * 60 * 1000;
+/** Forms sit open and clocks drift — a just-lapsed minute isn't a "past"
+ *  booking. ("Ahora" mode sends now+buffer anyway, this is for scheduled
+ *  trips whose minute expired mid-fill.) */
+const PAST_GRACE_MS = 5 * 60 * 1000;
 
 /** A trip leg as the client describes it — exactly 1–2 legs per MVP. */
 export const legSchema = z.object({
@@ -24,9 +28,12 @@ export const legSchema = z.object({
   /** ISO 8601 timestamp of when the leg departs. */
   scheduledAt: z.iso
     .datetime()
-    .refine((value) => new Date(value).getTime() > Date.now(), {
-      message: "La fecha tiene que ser futura",
-    })
+    .refine(
+      (value) => new Date(value).getTime() > Date.now() - PAST_GRACE_MS,
+      {
+        message: "La fecha tiene que ser futura",
+      },
+    )
     .refine(
       (value) =>
         new Date(value).getTime() < Date.now() + MAX_BOOKING_HORIZON_MS,
