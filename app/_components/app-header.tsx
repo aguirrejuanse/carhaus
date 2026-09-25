@@ -35,7 +35,6 @@ export async function AppHeader() {
           width={94}
           height={40}
           priority
-          className="rounded-md"
         />
       </Link>
       {rider && (
