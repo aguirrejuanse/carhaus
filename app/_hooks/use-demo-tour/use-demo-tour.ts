@@ -78,19 +78,41 @@ export function startDemoTour() {
       typeof step.element !== "string" ||
       document.querySelector(step.element),
   );
-  driver({
+  // driver.js measures the highlight box once per step — the target can
+  // still grow (the round-trip toggle mounts the return input inside the
+  // same wrapper), so we refresh on any subtree mutation.
+  let observer: MutationObserver | undefined;
+  const d = driver({
     showProgress: true,
     popoverClass: "carhaus-tour",
     nextBtnText: "Siguiente",
     prevBtnText: "Atrás",
     doneBtnText: "Listo",
     steps: present,
-    // Portaled UI (place suggestions, selects) renders under the tour
-    // overlay — a click there closes the tour instead of dead-ending,
-    // and the next click reaches the element.
-    overlayClickBehavior: "close",
-    onDestroyed: () => localStorage.setItem(TOUR_KEY, "1"),
-  }).drive();
+    onHighlightStarted: (element) => {
+      observer?.disconnect();
+      if (!element) return;
+      observer = new MutationObserver(() => d.refresh());
+      observer.observe(element, { childList: true, subtree: true });
+    },
+    onDestroyed: () => {
+      observer?.disconnect();
+      document.removeEventListener("pointerdown", dismiss);
+      localStorage.setItem(TOUR_KEY, "1");
+    },
+  });
+
+  // Portaled UI (place suggestions, selects) renders under the tour
+  // overlay — any pointerdown outside the popover dismisses the tour,
+  // so the next click reaches the element instead of dead-ending.
+  const dismiss = (event: PointerEvent) => {
+    if (!(event.target as Element).closest?.(".driver-popover")) {
+      d.destroy();
+    }
+  };
+  document.addEventListener("pointerdown", dismiss);
+
+  d.drive();
 }
 
 export function useDemoTour() {
