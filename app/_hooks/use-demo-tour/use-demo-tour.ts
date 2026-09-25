@@ -104,13 +104,13 @@ export function startDemoTour() {
     },
   });
 
-  // Dismiss on clicks outside the popover AND outside the highlighted
-  // element — typing into a highlighted field must not kill the tour,
-  // but a click on the dimmed page (or on portaled UI trapped under the
-  // overlay) should hand control back instead of dead-ending.
+  // Dismiss on clicks outside the popover, the highlighted element,
+  // and lifted portals — typing or picking a suggestion must not kill
+  // the tour, but a click on the dimmed page hands control back.
   const dismiss = (event: PointerEvent) => {
     const target = event.target as Element;
     if (target.closest?.(".driver-popover")) return;
+    if (target.closest?.(".tour-lift")) return;
     if (activeElement?.contains(target)) return;
     d.destroy();
   };

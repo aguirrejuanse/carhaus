@@ -127,6 +127,18 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+/* driver.js freezes the whole page while a tour runs
+   (`.driver-active * { pointer-events:none }`) and dims it under an
+   svg overlay at z-index 10000 — portaled popups would render under
+   the dim and reject clicks. `.tour-lift` re-enables and raises them
+   so the user can keep interacting with the highlighted step. */
+.driver-active .tour-lift,
+.driver-active .tour-lift * {
+  pointer-events: auto;
+}
+.driver-active .tour-lift {
+  z-index: 10001;
+}
 /* driver.js popover — navy card so it reads against the light page. */
 .driver-popover.carhaus-tour {
   background-color: #1e1b4b;

@@ -92,7 +92,7 @@ export function PlaceInput({
         <Autocomplete.Portal>
           <Autocomplete.Positioner
             sideOffset={4}
-            className="isolate z-50"
+            className="tour-lift isolate z-50"
           >
             <Autocomplete.Popup className="relative isolate z-50 max-h-60 w-(--anchor-width) min-w-36 overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
               <Autocomplete.List>
