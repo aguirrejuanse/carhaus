@@ -80,10 +80,16 @@ export function startDemoTour() {
   );
   driver({
     showProgress: true,
+    popoverClass: "carhaus-tour",
     nextBtnText: "Siguiente",
     prevBtnText: "Atrás",
     doneBtnText: "Listo",
     steps: present,
+    // Portaled UI (place suggestions, selects) renders under the tour
+    // overlay — a click there closes the tour instead of dead-ending,
+    // and the next click reaches the element.
+    overlayClickBehavior: "close",
+    onDestroyed: () => localStorage.setItem(TOUR_KEY, "1"),
   }).drive();
 }
 
