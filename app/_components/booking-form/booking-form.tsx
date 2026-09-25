@@ -77,7 +77,10 @@ export function BookingForm({ initial, riderEmail }: Props) {
             onSnackChange={form.setSnackChoice}
           />
         </div>
-        <div data-tour="preview">
+        {/* data-tour only when the panel has content — highlighting an
+            empty box reads as a broken step; without it the tour popover
+            centers instead. */}
+        <div data-tour={form.preview ? "preview" : undefined}>
           <PreviewPanel preview={form.preview} status={form.previewStatus} />
         </div>
 

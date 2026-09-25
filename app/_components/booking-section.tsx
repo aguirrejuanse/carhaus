@@ -47,7 +47,9 @@ export function BookingSection({
 
   return (
     <div className="flex w-full flex-col gap-10">
-      <div data-tour="templates">
+      {/* Same rule as the preview step — highlight only when the list
+          actually has templates. */}
+      <div data-tour={templates.length > 0 ? "templates" : undefined}>
         <TemplateList
           templates={templates}
           isLoading={isPending}
