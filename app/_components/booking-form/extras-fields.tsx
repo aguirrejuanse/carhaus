@@ -71,6 +71,7 @@ export function ExtrasFields({
             id="acTemperatureCelsius"
             name="acTemperatureCelsius"
             type="number"
+            inputMode="numeric"
             min={16}
             max={30}
             step={1}

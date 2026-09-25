@@ -1,17 +1,14 @@
 "use client";
 
 /**
- * First-visit guided tour (driver.js) — runs once per browser via
- * localStorage, with `startDemoTour` exported for a manual replay.
- * Steps highlight `data-tour` attributes; steps whose element isn't
- * rendered (empty preview, no templates, logged-in header) are skipped.
+ * Guided tour (driver.js) — launched only from the "¿Cómo funciona?"
+ * button; never auto-runs (intrusive on mobile). Steps highlight
+ * `data-tour` attributes; steps whose element isn't rendered (empty
+ * preview, no templates, logged-in header) are skipped.
  */
 
-import { useEffect } from "react";
 import { driver, type DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
-
-const TOUR_KEY = "carhaus-demo-tour-seen";
 
 const steps: DriveStep[] = [
   {
@@ -100,7 +97,6 @@ export function startDemoTour() {
     onDestroyed: () => {
       observer?.disconnect();
       document.removeEventListener("pointerdown", dismiss);
-      localStorage.setItem(TOUR_KEY, "1");
     },
   });
 
@@ -117,16 +113,4 @@ export function startDemoTour() {
   document.addEventListener("pointerdown", dismiss);
 
   d.drive();
-}
-
-export function useDemoTour() {
-  useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY)) return;
-    // Let the page settle (fonts, template list) before highlighting.
-    const timer = setTimeout(() => {
-      startDemoTour();
-      localStorage.setItem(TOUR_KEY, "1");
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
 }

@@ -1,1 +1,1 @@
-export { startDemoTour, useDemoTour } from "./use-demo-tour";
+export { startDemoTour } from "./use-demo-tour";

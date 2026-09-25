@@ -9,10 +9,7 @@
  */
 
 import { useState } from "react";
-import {
-  startDemoTour,
-  useDemoTour,
-} from "@/app/_hooks/use-demo-tour";
+import { startDemoTour } from "@/app/_hooks/use-demo-tour";
 import { useTemplatesQuery } from "@/app/_hooks/use-templates-query";
 import type { TemplateItem } from "@/lib/services/templates";
 import { BookingForm, type BookingInitial } from "./booking-form";
@@ -31,7 +28,6 @@ export function BookingSection({
     useTemplatesQuery(initialTemplates);
   const [initial, setInitial] = useState<BookingInitial | undefined>();
   const [formKey, setFormKey] = useState(0);
-  useDemoTour();
 
   const applyTemplate = (template: TemplateItem) => {
     setInitial({
