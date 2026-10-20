@@ -9,6 +9,7 @@ import {
   NOTIFICATION_CHANNEL,
   NOTIFICATION_STATUS,
   notifications,
+  pricingPreviewRequests,
   pricingRules,
   TRIP_STATUS,
   TRIP_TYPE,
@@ -368,6 +369,32 @@ export async function countRecentAdminLoginAttempts(
         eq(adminLoginAttempts.ip, ip),
         gt(
           adminLoginAttempts.createdAt,
+          new Date(Date.now() - windowMs),
+        ),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+/** Price previews from one IP inside `windowMs` — every preview calls the
+ *  billable distance provider, so this caps per-IP spend on the public
+ *  route. Each request leaves a row, same as admin login attempts. */
+export async function recordPricingPreviewRequest(ip: string) {
+  await db.insert(pricingPreviewRequests).values({ ip });
+}
+
+export async function countRecentPricingPreviewRequests(
+  ip: string,
+  windowMs: number,
+) {
+  const [row] = await db
+    .select({ count: count() })
+    .from(pricingPreviewRequests)
+    .where(
+      and(
+        eq(pricingPreviewRequests.ip, ip),
+        gt(
+          pricingPreviewRequests.createdAt,
           new Date(Date.now() - windowMs),
         ),
       ),

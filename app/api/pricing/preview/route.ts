@@ -7,7 +7,11 @@
  */
 
 import { z } from "zod";
-import { getActivePricingRules } from "@/db/queries";
+import {
+  countRecentPricingPreviewRequests,
+  getActivePricingRules,
+  recordPricingPreviewRequest,
+} from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
 import { mutationRoute } from "@/lib/api/route";
 import { legsSchema } from "@/lib/api/schemas";
@@ -29,6 +33,11 @@ const previewSchema = z.object({
   legs: legsSchema,
 });
 
+/** Provider-cost cap — every preview calls billable Google APIs, so cap
+ *  per source IP (same pattern as admin login / OTP request limits). */
+const PREVIEW_WINDOW_MS = 15 * 60 * 1000;
+const PREVIEW_MAX_REQUESTS = 20;
+
 /** Distance Matrix accepts `place_id:` references — an exact place beats
  *  re-geocoding free text when the rider picked an autocomplete option. */
 function distanceRef(text: string, placeId?: string): string {
@@ -37,7 +46,21 @@ function distanceRef(text: string, placeId?: string): string {
 
 export const POST = mutationRoute({
   schema: previewSchema,
-  handler: async (input) => {
+  handler: async (input, req) => {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (
+      ip &&
+      (await countRecentPricingPreviewRequests(ip, PREVIEW_WINDOW_MS)) >=
+        PREVIEW_MAX_REQUESTS
+    ) {
+      throw new ApiError(
+        429,
+        "preview_rate_limited",
+        "Demasiadas consultas — probá más tarde",
+      );
+    }
+    if (ip) await recordPricingPreviewRequest(ip);
+
     const env = getEnv();
     const provider = new GoogleDistanceProvider(env.GOOGLE_MAPS_API_KEY);
     const rules = await getActivePricingRules();
