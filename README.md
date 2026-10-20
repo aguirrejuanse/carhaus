@@ -5,13 +5,11 @@ queue approves them. Built for a chauffeur service in Mendoza, Argentina.
 
 ## Demo
 
-<video src="docs/media/launch-hero-v1.mp4" poster="docs/media/hero-poster.png" controls width="100%"></video>
+![Carhaus demo](docs/media/launch-hero.gif)
 
-**Full product tour:**
-
-<video src="docs/media/launch-tour-v1.mp4" controls width="100%"></video>
-
-Short-form cuts: [teaser](docs/media/launch-teaser-v1.mp4) ·
+Full videos: [hero](docs/media/launch-hero-v1.mp4) ·
+[product tour](docs/media/launch-tour-v1.mp4) ·
+[teaser](docs/media/launch-teaser-v1.mp4) ·
 [booking a ride](docs/media/reel-pedido-v1.mp4) ·
 [trip detail](docs/media/reel-viaje-v1.mp4) ·
 [direct booking](docs/media/reel-directo-v1.mp4)
