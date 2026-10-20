@@ -13,6 +13,7 @@ import {
   recordPricingPreviewRequest,
 } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
+import { clientIp } from "@/lib/api/guards";
 import { mutationRoute } from "@/lib/api/route";
 import { legsSchema } from "@/lib/api/schemas";
 import {
@@ -47,7 +48,7 @@ function distanceRef(text: string, placeId?: string): string {
 export const POST = mutationRoute({
   schema: previewSchema,
   handler: async (input, req) => {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const ip = clientIp(req);
     if (
       ip &&
       (await countRecentPricingPreviewRequests(ip, PREVIEW_WINDOW_MS)) >=

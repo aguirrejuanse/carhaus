@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./errors";
-import { assertSameOrigin } from "./guards";
+import { assertSameOrigin, clientIp } from "./guards";
 
 const APP_ORIGIN = "https://carhaus.example.com";
 
@@ -52,5 +52,30 @@ describe("assertSameOrigin", () => {
   it("rejects an Origin that matches APP_ORIGIN but hits a different host", () => {
     const req = buildRequest(APP_ORIGIN, "https://unexpected.vercel.app");
     expect(() => assertSameOrigin(req)).toThrow(ApiError);
+  });
+});
+
+describe("clientIp", () => {
+  function reqWithForwardedFor(value?: string): NextRequest {
+    const headers = new Headers();
+    if (value !== undefined) headers.set("x-forwarded-for", value);
+    return new NextRequest(`${APP_ORIGIN}/api/x`, {
+      method: "POST",
+      headers,
+    });
+  }
+
+  it("returns the first entry of a proxy chain", () => {
+    expect(clientIp(reqWithForwardedFor("203.0.113.7, 10.0.0.1, 10.0.0.2"))).toBe(
+      "203.0.113.7",
+    );
+  });
+
+  it("trims whitespace around a single value", () => {
+    expect(clientIp(reqWithForwardedFor(" 203.0.113.7 "))).toBe("203.0.113.7");
+  });
+
+  it("returns undefined when the header is absent (local dev)", () => {
+    expect(clientIp(reqWithForwardedFor())).toBeUndefined();
   });
 });
