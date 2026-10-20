@@ -17,6 +17,7 @@ import {
   recordAdminLoginAttempt,
 } from "@/db/queries";
 import { ApiError, jsonSuccess } from "@/lib/api/errors";
+import { clientIp } from "@/lib/api/guards";
 import { mutationRoute } from "@/lib/api/route";
 import { ADMIN_COOKIE_NAME, signAdminSession } from "@/lib/auth";
 
@@ -40,7 +41,7 @@ const LOGIN_MAX_ATTEMPTS = 10;
 export const POST = mutationRoute({
   schema: loginSchema,
   handler: async (input, req) => {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const ip = clientIp(req);
     if (
       ip &&
       (await countRecentAdminLoginAttempts(ip, LOGIN_WINDOW_MS)) >=

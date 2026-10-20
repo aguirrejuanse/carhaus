@@ -41,3 +41,12 @@ export function assertSameOrigin(req: NextRequest): void {
     );
   }
 }
+
+/**
+ * Client IP for per-IP rate limiting — `x-forwarded-for` on Vercel; falls
+ * back absent (local dev), in which case callers simply skip the cap.
+ * The FIRST entry is the original client; later hops are proxies.
+ */
+export function clientIp(req: NextRequest): string | undefined {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+}

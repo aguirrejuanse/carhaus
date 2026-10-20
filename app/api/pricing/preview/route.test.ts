@@ -14,6 +14,8 @@ vi.mock("@/db/queries", () => ({
     nightStartHour: 22,
     nightEndHour: 6,
   })),
+  countRecentPricingPreviewRequests: vi.fn(async () => 0),
+  recordPricingPreviewRequest: vi.fn(async () => {}),
 }));
 
 const APP_ORIGIN = "https://carhaus.example.com";
@@ -27,15 +29,26 @@ const ENV_KEYS = [
   "GOOGLE_MAPS_API_KEY",
 ] as const;
 
-function buildRequest(body?: unknown): NextRequest {
+function buildRequest(body?: unknown, ip?: string): NextRequest {
+  const headers = new Headers({
+    origin: APP_ORIGIN,
+    "content-type": "application/json",
+  });
+  if (ip) headers.set("x-forwarded-for", ip);
   return new NextRequest(`${APP_ORIGIN}/api/pricing/preview`, {
     method: "POST",
-    headers: new Headers({
-      origin: APP_ORIGIN,
-      "content-type": "application/json",
-    }),
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+/** Future timestamps relative to now — hardcoded ISO dates go stale and
+ *  start failing the past-booking refinement. UTC hours are picked so the
+ *  ART (UTC-3) local hour lands outside/inside the 22→6 night window. */
+function futureIso(daysAhead: number, utcHour: number): string {
+  const date = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000);
+  date.setUTCHours(utcHour, 0, 0, 0);
+  return date.toISOString();
 }
 
 const validBody = {
@@ -43,8 +56,8 @@ const validBody = {
     {
       origin: "Guaymallén, Mendoza",
       destination: "Plaza Shopping, Mendoza",
-      // Midday local time — outside the 22→6 night window.
-      scheduledAt: "2026-10-01T15:00:00.000Z",
+      // 15:00 UTC = 12:00 ART — midday, outside the 22→6 night window.
+      scheduledAt: futureIso(7, 15),
     },
   ],
 };
@@ -117,8 +130,8 @@ describe("POST /api/pricing/preview", () => {
           {
             origin: "Plaza Shopping, Mendoza",
             destination: "Guaymallén, Mendoza",
-            // 23:30 local — inside the 22→6 night window (1.5x).
-            scheduledAt: "2026-10-02T02:30:00.000Z",
+            // 02:00 UTC = 23:00 ART — inside the 22→6 night window (1.5x).
+            scheduledAt: futureIso(8, 2),
           },
         ],
       }),
@@ -155,6 +168,23 @@ describe("POST /api/pricing/preview", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: { code: "validation_failed" },
     });
+  });
+
+  it("returns 429 past the per-IP cap without calling the provider", async () => {
+    const { countRecentPricingPreviewRequests } = await import("@/db/queries");
+    vi.mocked(countRecentPricingPreviewRequests).mockResolvedValueOnce(20);
+    const getDistance = vi.spyOn(
+      GoogleDistanceProvider.prototype,
+      "getDistance",
+    );
+
+    const res = await POST(buildRequest(validBody, "203.0.113.7"));
+
+    expect(res.status).toBe(429);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "preview_rate_limited" },
+    });
+    expect(getDistance).not.toHaveBeenCalled();
   });
 
   it("returns 403 without a matching Origin header", async () => {

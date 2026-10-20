@@ -50,13 +50,21 @@ async function buildRequest(
   });
 }
 
+/** Future timestamp relative to now — hardcoded ISO dates go stale and
+ *  start failing the past-booking refinement. */
+function futureIso(daysAhead: number): string {
+  const date = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000);
+  date.setUTCHours(15, 0, 0, 0);
+  return date.toISOString();
+}
+
 const quotePayload: QuotePayload = {
   legs: [
     {
       sequence: 1,
       origin: "Guaymallén, Mendoza",
       destination: "Plaza Shopping, Mendoza",
-      scheduledAt: "2026-10-01T15:00:00.000Z",
+      scheduledAt: futureIso(7),
       distanceMeters: 10000,
       durationSeconds: 1200,
       priceCents: 940000,
@@ -71,7 +79,7 @@ const validBody = {
     {
       origin: "Guaymallén, Mendoza",
       destination: "Plaza Shopping, Mendoza",
-      scheduledAt: "2026-10-01T15:00:00.000Z",
+      scheduledAt: futureIso(7),
     },
   ],
   extras: { snackChoice: "sweet", spotifyPlaylistUrl: "https://open.spotify.com/playlist/x" },

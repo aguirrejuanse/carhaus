@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Carhaus
 
-## Getting Started
+Private driver booking platform — riders quote and book trips, an admin
+queue approves them. Built for a chauffeur service in Mendoza, Argentina.
 
-First, run the development server:
+## Demo
+
+<video src="docs/media/launch-hero-v1.mp4" poster="docs/media/hero-poster.png" controls width="100%"></video>
+
+**Full product tour:**
+
+<video src="docs/media/launch-tour-v1.mp4" controls width="100%"></video>
+
+Short-form cuts: [teaser](docs/media/launch-teaser-v1.mp4) ·
+[booking a ride](docs/media/reel-pedido-v1.mp4) ·
+[trip detail](docs/media/reel-viaje-v1.mp4) ·
+[direct booking](docs/media/reel-directo-v1.mp4)
+
+## What it does
+
+- **Instant price quotes** — real driving distance/duration via Google
+  Distance Matrix, priced by versioned rules (base fare + per-km +
+  per-minute + night multiplier). 1–2 legs (one-way / round trip).
+- **Places autocomplete + signed map preview** — the rider sees resolved
+  addresses and a static map of the route before booking.
+- **Email OTP verification** — riders prove email ownership before a trip
+  enters the admin queue. No accounts, no passwords.
+- **Signed quotes** — the server signs the quote (HMAC); the booking
+  endpoint verifies it instead of trusting a client-supplied price.
+- **Admin queue** — approve/reject trips, assign car + driver; approval
+  emails via Resend and `wa.me` deep links to the assigned driver.
+- **Trip templates** — riders save frequent routes for one-tap rebooking.
+
+## Stack
+
+Next.js 15 (App Router, Turbopack) · React 19 · TypeScript · Drizzle ORM +
+Neon Postgres · Tailwind 4 + shadcn · TanStack Query · Zod 4 · jose (JWT)
+· Vitest · pnpm
+
+## Engineering notes
+
+- **Provider keys never reach the client** — Google Maps calls are
+  proxied server-side; the static-map endpoint only serves routes it
+  signed (HMAC), so it can't be used as a free maps proxy.
+- **Every billable endpoint is rate-limited** — per-IP, DB-backed caps
+  on previews, OTP requests, and admin login.
+- **CSRF by Origin check** — `mutationRoute()` asserts same-origin on
+  every mutation (Next middleware alone is bypassable, CVE-2025-29927).
+- **Secrets stay hashed/signed** — OTP codes stored HMAC-hashed, admin
+  sessions as HS256 JWTs, quotes tamper-evident.
+
+## Getting started
+
+Requires pnpm and a Postgres database (Neon works out of the box).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fill in DATABASE_URL + secrets
+pnpm install
+pnpm db:migrate              # apply drizzle migrations
+pnpm db:seed                 # admin user + initial pricing rules
+pnpm db:seed:demo            # optional: demo trips for the admin queue
+pnpm dev                     # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Required | Purpose |
+|---|---|---|
+| `APP_ORIGIN` | yes | Base URL of the deployment (`http://localhost:3000` locally) |
+| `DATABASE_URL` | yes | Neon Postgres connection string |
+| `JWT_SECRET` | yes | Signs admin session JWTs (min 32 chars) |
+| `QUOTE_SECRET` | yes | Signs quote tokens + map URLs (min 32 chars) |
+| `GOOGLE_MAPS_API_KEY` | yes | Distance Matrix, Places (New), Static Maps |
+| `SEED_ADMIN_PASSWORD` | no | Overrides the seeded admin password |
+| `RESEND_API_KEY` | no | Approval emails (trips still approve without it) |
+| `RESEND_FROM` | no | Verified sender address |
+| `OPERATOR_WHATSAPP_NUMBER` | no | Fallback number for `wa.me` links |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Generate secrets with `openssl rand -hex 32`.
 
-## Learn More
+### Local admin access
 
-To learn more about Next.js, take a look at the following resources:
+`db:seed` creates `admin@carhaus.dev` with password `changeme123!`
+(or `SEED_ADMIN_PASSWORD` if set). Admin UI lives at `/admin` — sign in
+via `/admin/login`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---|---|
+| `pnpm dev` | Dev server (Turbopack) |
+| `pnpm build` / `pnpm start` | Production build / serve |
+| `pnpm test` | Vitest suite (111+ tests) |
+| `pnpm lint` | ESLint |
+| `pnpm db:generate` / `pnpm db:migrate` | Drizzle migrations |
+| `pnpm db:seed` / `pnpm db:seed:demo` | Seed admin + rules / demo trips |
+| `pnpm db:studio` | Drizzle Studio |
 
-## Deploy on Vercel
+## Layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/api/          route handlers (mutationRoute boundary, zod-validated)
+app/_hooks/       TanStack Query hooks (component → hook → service → HTTP)
+db/               schema, queries, migrations, seeds
+lib/              domain logic — pricing, quotes (HMAC), OTP, distance,
+                  notifications, API guards/errors
+```
